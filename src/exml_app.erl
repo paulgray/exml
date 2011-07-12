@@ -17,7 +17,21 @@
 %% Application callbacks
 %% ===================================================================
 start(_StartType, _StartArgs) ->
+    ok = load_nif(),
+
     {ok, self()}.
 
 stop(_State) ->
-    ok.
+    code:purge(?MODULE).
+
+-spec load_nif() -> ok | {error, term()}.
+load_nif() ->
+    PrivDir = case code:priv_dir(?MODULE) of
+                  {error, _} ->
+                      EbinDir = filename:dirname(code:which(?MODULE)),
+                      AppPath = filename:dirname(EbinDir),
+                      filename:join(AppPath, "priv");
+                  Path ->
+                      Path
+              end,
+    erlang:load_nif(filename:join(PrivDir, "exml"), none).

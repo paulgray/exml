@@ -1,7 +1,7 @@
 {application, exml,
  [
   {description, "XML parsing library"},
-  {vsn, "0.1"},
+  {vsn, git},
   {registered, []},
   {applications, [kernel,
                   stdlib]},
