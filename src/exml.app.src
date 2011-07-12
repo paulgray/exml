@@ -1,0 +1,10 @@
+{application, exml,
+ [
+  {description, "XML parsing library"},
+  {vsn, "0.1"},
+  {registered, []},
+  {applications, [kernel,
+                  stdlib]},
+  {mod, {exml_app, []}},
+  {env, []}
+ ]}.
