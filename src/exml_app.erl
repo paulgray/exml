@@ -34,4 +34,4 @@ load_nif() ->
                   Path ->
                       Path
               end,
-    erlang:load_nif(filename:join(PrivDir, "exml"), none).
+    exml:load(filename:join(PrivDir, "exml")).
