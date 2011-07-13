@@ -83,16 +83,11 @@ void *character_data_handler(expat_parser *parser_data, const XML_Char *s, int l
     return NULL;
 };
 
-void* start_ns_decl_handler(XML_Parser parser, const XML_Char *prefix, const XML_Char *uri)
-{
-    fprintf(stderr, "parsing start_ns_decl_handler %s %s\n", prefix, uri);
-    return NULL;
-};
-
-ERL_NIF_TERM new_parser(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser parser;
     expat_parser *parser_data = (expat_parser *)enif_alloc(sizeof(expat_parser));
+    ERL_NIF_TERM parser_resource;
 
     parser = XML_ParserCreate_MM("UTF-8", &ms, "\n");
     parser_data->env = env;
@@ -103,19 +98,18 @@ ERL_NIF_TERM new_parser(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     XML_SetEndElementHandler(parser, (XML_EndElementHandler)end_element_handler);
     XML_SetCharacterDataHandler(parser, (XML_CharacterDataHandler)character_data_handler);
 
-    XML_SetStartNamespaceDeclHandler(parser, (XML_StartNamespaceDeclHandler)start_ns_decl_handler);
     XML_SetReturnNSTriplet(parser, 1);
-
     XML_SetDefaultHandler(parser, NULL);
 
     XML_Parser *xml_parser = (XML_Parser *)enif_alloc_resource(PARSER_POINTER, sizeof(XML_Parser));
     *xml_parser = parser;
+    parser_resource = enif_make_resource(env, (void *)xml_parser);
+    enif_release_resource(xml_parser);
 
-    return enif_make_tuple(env, 2, enif_make_atom(env, "ok"),
-                           enif_make_resource(env, (void *)xml_parser));
+    return enif_make_tuple(env, 2, enif_make_atom(env, "ok"), parser_resource);
 };
 
-ERL_NIF_TERM parse(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser **parser;
     int is_final, res, errcode;

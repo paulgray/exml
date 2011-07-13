@@ -19,6 +19,6 @@ load(Path) ->
 new_parser() ->
     throw({?MODULE, nif_not_loaded}).
 
--spec parse(term(), binary(), boolean()) -> any().
+-spec parse(term(), binary(), boolean()) -> ok.
 parse(_Parser, _Data, _Final) ->
     throw({?MODULE, nif_not_loaded}).

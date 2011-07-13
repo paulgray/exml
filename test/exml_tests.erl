@@ -7,7 +7,8 @@
 %%% Created : 12 Jul 2011 by Michal Ptaszek <michal.ptaszek@erlang-solutions.com>
 %%%-------------------------------------------------------------------
 
-%% TODO: write proper properties!
+%% TODO: write Proper properties!
+
 -module(exml_tests).
 
 -include_lib("eunit/include/eunit.hrl").
