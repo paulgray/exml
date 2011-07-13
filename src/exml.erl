@@ -9,7 +9,7 @@
 -module(exml).
 
 -export([load/1]).
--export([new_parser/0, parse/4]).
+-export([new_parser/0, parse/3]).
 
 -spec load(string()) -> any().
 load(Path) ->
@@ -19,6 +19,6 @@ load(Path) ->
 new_parser() ->
     throw({?MODULE, nif_not_loaded}).
 
--spec parse(term(), integer(), iolist(), boolean()) -> any().
-parse(_Parser, _Size, _Data, _Final) ->
+-spec parse(term(), binary(), boolean()) -> any().
+parse(_Parser, _Data, _Final) ->
     throw({?MODULE, nif_not_loaded}).

@@ -1,22 +1,28 @@
 #include "exml.h"
 
+static ErlNifResourceType *PARSER_POINTER = NULL;
+
 void* start_element_handler(XML_Parser parser, const XML_Char *name, const XML_Char **atts)
 {
+    fprintf(stderr, "parsing start_element_handler %s\n", name);
     return NULL;
 };
 
 void* end_element_handler(XML_Parser parser, const XML_Char *name)
 {
+    fprintf(stderr, "parsing end_element_handler %s\n", name);
     return NULL;
 };
 
 void* character_data_handler(XML_Parser parser, const XML_Char *s, int len)
 {
+    fprintf(stderr, "parsing character_data_handler %s\n", s);
     return NULL;
 };
 
 void* start_ns_decl_handler(XML_Parser parser, const XML_Char *prefix, const XML_Char *uri)
 {
+    fprintf(stderr, "parsing start_ns_decl_handler %s %s\n", prefix, uri);
     return NULL;
 };
 
@@ -34,26 +40,47 @@ ERL_NIF_TERM new_parser(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     XML_SetDefaultHandler(parser, NULL);
 
-    return enif_make_resource(env, parser);
+    XML_Parser *xml_parser = (XML_Parser *)enif_alloc_resource(PARSER_POINTER, sizeof(XML_Parser));
+    *xml_parser = parser;
+
+    return enif_make_tuple(env, 2, enif_make_atom(env, "ok"),
+                           enif_make_resource(env, (void *)xml_parser));
 };
 
 ERL_NIF_TERM parse(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    assert(argc == 4);
+    XML_Parser **parser;
+    int is_final, res;
+    ErlNifBinary stream;
 
-    XML_Parser parser = (XML_Parser)argv[0];
-    int size = (int)argv[1];
-    char *stream = (char *)enif_alloc(size);
-    int final = (int)argv[3];
+    assert(argc == 3);
 
-    enif_get_string(env, argv[2], stream, size, ERL_NIF_LATIN1);
+    if (!enif_get_resource(env, argv[0], PARSER_POINTER, (void **)&parser))
+        return enif_make_badarg(env);
 
-    XML_Parse(parser, stream, size, final);
+    if (!enif_is_binary(env, argv[1]))
+        return enif_make_badarg(env);
+
+    enif_get_int(env, argv[2], &is_final);
+    enif_inspect_binary(env, argv[1], &stream);
+
+    fprintf(stderr, "Parser: %p, stream: %s\n", *parser, stream.data);
+    res = XML_Parse(*parser, (const char *)stream.data, stream.size, is_final);
+
+    if(!res)
+        {
+            //            errcode = XML_GetErrorCode(d->parser);
+            //            errstring = (char *)XML_ErrorString(errcode);
+        }
+
     return enif_make_atom(env, "ok");
 };
 
 static int load(ErlNifEnv* env, void **priv, ERL_NIF_TERM info)
 {
+    PARSER_POINTER = enif_open_resource_type(env, "exml", "parser_pointer", NULL,
+                                             ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER,
+                                             NULL);
     return 0;
 };
 
@@ -75,7 +102,7 @@ static void unload(ErlNifEnv* env, void* priv)
 static ErlNifFunc funcs[] =
     {
         {"new_parser", 0, new_parser},
-        {"parse", 4, parse}
+        {"parse", 3, parse}
     };
 
 ERL_NIF_INIT(exml, funcs, &load, &reload, &upgrade, &unload);

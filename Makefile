@@ -11,5 +11,5 @@ deps:
 clean:
 	./rebar clean
 
-test:
+test: compile
 	./rebar skip_deps=true eunit suite=exml_tests

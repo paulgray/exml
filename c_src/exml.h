@@ -4,6 +4,7 @@
 #include <erl_nif.h>
 #include <expat.h>
 #include <assert.h>
+#include <stdio.h>
 
 static XML_Memory_Handling_Suite ms =
     {enif_alloc, enif_realloc, enif_free};
