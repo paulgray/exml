@@ -7,16 +7,36 @@ void* start_element_handler(expat_parser *parser_data, const XML_Char *name, con
     ErlNifPid pid;
     ErlNifBinary element_name;
     ErlNifEnv* msg_env = enif_alloc_env();
+    ERL_NIF_TERM attrs_list = enif_make_list(parser_data->env, 0);
+    int i;
 
     enif_self(parser_data->env, &pid);
 
     enif_alloc_binary(strlen(name), &element_name);
     strcpy((char *) element_name.data, (const char *)name);
 
+    for(i = 0; atts[i]; i += 2);
+    while(i)
+        {
+            ErlNifBinary attr_name, attr_value;
+
+            enif_alloc_binary(strlen(atts[i-1]), &attr_value);
+            enif_alloc_binary(strlen(atts[i-2]), &attr_name);
+            strcpy((char *) attr_value.data, (const char *)atts[i-1]);
+            strcpy((char *) attr_name.data, (const char *)atts[i-2]);
+
+            ERL_NIF_TERM attr = enif_make_tuple(parser_data->env, 2,
+                                                enif_make_binary(parser_data->env, &attr_name),
+                                                enif_make_binary(parser_data->env, &attr_value));
+            attrs_list = enif_make_list_cell(parser_data->env, attr, attrs_list);
+
+            i -= 2;
+        };
+
     ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 3,
                                          enif_make_atom(parser_data->env, "xml_element_start"),
                                          enif_make_binary(parser_data->env, &element_name),
-                                         enif_make_list(parser_data->env, 0));
+                                         attrs_list);
     enif_send(parser_data->env, &pid, parser_data->env, event);
     enif_free_env(msg_env);
 

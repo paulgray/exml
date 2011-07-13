@@ -22,9 +22,9 @@ application_test() ->
 basic_parse_test() ->
     {ok, Parser} = exml:new_parser(),
 
-    ?assertEqual(ok, exml:parse(Parser, <<"<test/>">>, 1)),
+    ?assertEqual(ok, exml:parse(Parser, <<"<test attr='val'/>">>, 1)),
     Elements = collect_msgs([]),
-    ?assertEqual([{xml_element_start, <<"test">>, []},
+    ?assertEqual([{xml_element_start, <<"test">>, [{<<"attr">>, <<"val">>}]},
                   {xml_element_end, <<"test">>}],
                  Elements).
 
@@ -35,4 +35,3 @@ collect_msgs(Acc) ->
     after 0 ->
             lists:reverse(Acc)
     end.
-
