@@ -2,9 +2,24 @@
 
 static ErlNifResourceType *PARSER_POINTER = NULL;
 
-void* start_element_handler(XML_Parser parser, const XML_Char *name, const XML_Char **atts)
+void* start_element_handler(expat_parser *parser_data, const XML_Char *name, const XML_Char **atts)
 {
-    fprintf(stderr, "parsing start_element_handler %s\n", name);
+    ErlNifPid pid;
+    ErlNifBinary element_name;
+    ErlNifEnv* msg_env = enif_alloc_env();
+
+    enif_self(parser_data->env, &pid);
+
+    enif_alloc_binary(strlen(name), &element_name);
+    strcpy((char *) element_name.data, (const char *)name);
+
+    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 3,
+                                         enif_make_atom(parser_data->env, "xml_element_start"),
+                                         enif_make_binary(parser_data->env, &element_name),
+                                         enif_make_list(parser_data->env, 0));
+    enif_send(parser_data->env, &pid, parser_data->env, event);
+    enif_free_env(msg_env);
+
     return NULL;
 };
 
@@ -28,8 +43,13 @@ void* start_ns_decl_handler(XML_Parser parser, const XML_Char *prefix, const XML
 
 ERL_NIF_TERM new_parser(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    XML_Parser parser = XML_ParserCreate_MM("UTF-8", &ms, "\n");
-    XML_SetUserData(parser, parser);
+    XML_Parser parser;
+    expat_parser *parser_data = (expat_parser *)enif_alloc(sizeof(expat_parser));
+
+    parser = XML_ParserCreate_MM("UTF-8", &ms, "\n");
+    parser_data->env = env;
+
+    XML_SetUserData(parser, parser_data);
 
     XML_SetStartElementHandler(parser, (XML_StartElementHandler)start_element_handler);
     XML_SetEndElementHandler(parser, (XML_EndElementHandler)end_element_handler);
@@ -50,8 +70,9 @@ ERL_NIF_TERM new_parser(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 ERL_NIF_TERM parse(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser **parser;
-    int is_final, res;
+    int is_final, res, errcode;
     ErlNifBinary stream;
+    char *errstring;
 
     assert(argc == 3);
 
@@ -64,13 +85,14 @@ ERL_NIF_TERM parse(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     enif_get_int(env, argv[2], &is_final);
     enif_inspect_binary(env, argv[1], &stream);
 
-    fprintf(stderr, "Parser: %p, stream: %s\n", *parser, stream.data);
-    res = XML_Parse(*parser, (const char *)stream.data, stream.size, is_final);
-
+    res = XML_Parse((XML_Parser)(*parser), (const char *)stream.data, stream.size, is_final);
     if(!res)
         {
-            //            errcode = XML_GetErrorCode(d->parser);
-            //            errstring = (char *)XML_ErrorString(errcode);
+            errcode = XML_GetErrorCode((XML_Parser)(*parser));
+            errstring = (char *)XML_ErrorString(errcode);
+
+            return enif_make_tuple(env, 2, enif_make_atom(env, "error"),
+                                   enif_make_string(env, errstring, ERL_NIF_LATIN1));
         }
 
     return enif_make_atom(env, "ok");

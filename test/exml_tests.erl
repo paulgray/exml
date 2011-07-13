@@ -21,9 +21,12 @@ application_test() ->
 
 basic_parse_test() ->
     {ok, Parser} = exml:new_parser(),
-    io:format(user, "Parser: ~p~n", [Parser]),
 
-    timer:sleep(100),
-
-    ?assertEqual(#xmlElement{name = <<"test">>},
-                 exml:parse(Parser, <<"<test/>">>, 1)).
+    ?assertEqual(ok, exml:parse(Parser, <<"<test/>">>, 1)),
+    Element = receive
+                  X ->
+                      X
+              after 0 ->
+                      nothing
+              end,
+    ?assertEqual({xml_element_start, <<"test">>, []}, Element).
