@@ -23,10 +23,16 @@ basic_parse_test() ->
     {ok, Parser} = exml:new_parser(),
 
     ?assertEqual(ok, exml:parse(Parser, <<"<test/>">>, 1)),
-    Element = receive
-                  X ->
-                      X
-              after 0 ->
-                      nothing
-              end,
-    ?assertEqual({xml_element_start, <<"test">>, []}, Element).
+    Elements = collect_msgs([]),
+    ?assertEqual([{xml_element_start, <<"test">>, []},
+                  {xml_element_end, <<"test">>}],
+                 Elements).
+
+collect_msgs(Acc) ->
+    receive
+        Msg ->
+            collect_msgs([Msg | Acc])
+    after 0 ->
+            lists:reverse(Acc)
+    end.
+

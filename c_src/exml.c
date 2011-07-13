@@ -23,13 +23,27 @@ void* start_element_handler(expat_parser *parser_data, const XML_Char *name, con
     return NULL;
 };
 
-void* end_element_handler(XML_Parser parser, const XML_Char *name)
+void* end_element_handler(expat_parser *parser_data, const XML_Char *name)
 {
-    fprintf(stderr, "parsing end_element_handler %s\n", name);
+    ErlNifPid pid;
+    ErlNifBinary element_name;
+    ErlNifEnv* msg_env = enif_alloc_env();
+
+    enif_self(parser_data->env, &pid);
+
+    enif_alloc_binary(strlen(name), &element_name);
+    strcpy((char *) element_name.data, (const char *)name);
+
+    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 2,
+                                         enif_make_atom(parser_data->env, "xml_element_end"),
+                                         enif_make_binary(parser_data->env, &element_name));
+    enif_send(parser_data->env, &pid, parser_data->env, event);
+    enif_free_env(msg_env);
+
     return NULL;
 };
 
-void* character_data_handler(XML_Parser parser, const XML_Char *s, int len)
+void* character_data_handler(expat_parser *parser_data, const XML_Char *s, int len)
 {
     fprintf(stderr, "parsing character_data_handler %s\n", s);
     return NULL;
