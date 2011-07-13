@@ -22,9 +22,36 @@ application_test() ->
 basic_parse_test() ->
     {ok, Parser} = exml:new_parser(),
 
-    ?assertEqual(ok, exml:parse(Parser, <<"<test attr='val'/>">>, 1)),
+    ?assertEqual(ok, exml:parse(Parser, <<"<test/>">>, 1)),
     Elements = collect_msgs([]),
-    ?assertEqual([{xml_element_start, <<"test">>, [{<<"attr">>, <<"val">>}]},
+    ?assertEqual([{xml_element_start, <<"test">>, []},
+                  {xml_element_end, <<"test">>}],
+                 Elements).
+
+attrs_parsing_test() ->
+    {ok, Parser} = exml:new_parser(),
+
+    ?assertEqual(ok, exml:parse(Parser, <<"<test attr='val' second_attr='val2'/>">>, 1)),
+    Elements = collect_msgs([]),
+    ?assertEqual([{xml_element_start, <<"test">>, [{<<"attr">>, <<"val">>},
+                                                   {<<"second_attr">>, <<"val2">>}]},
+                  {xml_element_end, <<"test">>}],
+                 Elements).
+
+open_tag_test() ->
+    {ok, Parser} = exml:new_parser(),
+
+    ?assertEqual(ok, exml:parse(Parser, <<"<test>">>, 0)),
+    Elements = collect_msgs([]),
+    ?assertEqual([{xml_element_start, <<"test">>, []}], Elements).
+
+cdata_test() ->
+    {ok, Parser} = exml:new_parser(),
+
+    ?assertEqual(ok, exml:parse(Parser, <<"<test>some_cdata stuff</test>">>, 1)),
+    Elements = collect_msgs([]),
+    ?assertEqual([{xml_element_start, <<"test">>, []},
+                  {xml_cdata, <<"some_cdata stuff">>},
                   {xml_element_end, <<"test">>}],
                  Elements).
 

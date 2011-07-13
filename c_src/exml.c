@@ -2,7 +2,7 @@
 
 static ErlNifResourceType *PARSER_POINTER = NULL;
 
-void* start_element_handler(expat_parser *parser_data, const XML_Char *name, const XML_Char **atts)
+void *start_element_handler(expat_parser *parser_data, const XML_Char *name, const XML_Char **atts)
 {
     ErlNifPid pid;
     ErlNifBinary element_name;
@@ -43,7 +43,7 @@ void* start_element_handler(expat_parser *parser_data, const XML_Char *name, con
     return NULL;
 };
 
-void* end_element_handler(expat_parser *parser_data, const XML_Char *name)
+void *end_element_handler(expat_parser *parser_data, const XML_Char *name)
 {
     ErlNifPid pid;
     ErlNifBinary element_name;
@@ -63,9 +63,23 @@ void* end_element_handler(expat_parser *parser_data, const XML_Char *name)
     return NULL;
 };
 
-void* character_data_handler(expat_parser *parser_data, const XML_Char *s, int len)
+void *character_data_handler(expat_parser *parser_data, const XML_Char *s, int len)
 {
-    fprintf(stderr, "parsing character_data_handler %s\n", s);
+    ErlNifPid pid;
+    ErlNifBinary cdata;
+    ErlNifEnv* msg_env = enif_alloc_env();
+
+    enif_self(parser_data->env, &pid);
+
+    enif_alloc_binary(len, &cdata);
+    strcpy((char *) cdata.data, (const char *)s);
+
+    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 2,
+                                         enif_make_atom(parser_data->env, "xml_cdata"),
+                                         enif_make_binary(parser_data->env, &cdata));
+    enif_send(parser_data->env, &pid, parser_data->env, event);
+    enif_free_env(msg_env);
+
     return NULL;
 };
 
