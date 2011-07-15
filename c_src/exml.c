@@ -109,6 +109,21 @@ ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     return enif_make_tuple(env, 2, enif_make_atom(env, "ok"), parser_resource);
 };
 
+ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    XML_Parser **parser;
+
+    assert(argc == 1);
+
+    if (!enif_get_resource(env, argv[0], PARSER_POINTER, (void **)&parser))
+        return enif_make_badarg(env);
+
+    expat_parser *parser_data = XML_GetUserData((XML_Parser)(*parser));
+    enif_free(parser_data);
+
+    return enif_make_atom(env, "ok");
+};
+
 ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser **parser;
@@ -126,6 +141,10 @@ ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
     enif_get_int(env, argv[2], &is_final);
     enif_inspect_binary(env, argv[1], &stream);
+
+    expat_parser *parser_data = XML_GetUserData((XML_Parser)(*parser));
+    parser_data->result = enif_make_list(env, 0);
+    XML_SetUserData((XML_Parser)(*parser), parser_data);
 
     res = XML_Parse((XML_Parser)(*parser), (const char *)stream.data, stream.size, is_final);
     if(!res)
@@ -166,6 +185,7 @@ static void unload(ErlNifEnv* env, void* priv)
 static ErlNifFunc funcs[] =
     {
         {"new_parser", 0, new_parser},
+        {"free_parser", 1, free_parser},
         {"parse", 3, parse}
     };
 

@@ -27,7 +27,8 @@ basic_parse_test() ->
     Elements = collect_msgs([]),
     ?assertEqual([{xml_element_start, <<"test">>, []},
                   {xml_element_end, <<"test">>}],
-                 Elements).
+                 Elements),
+    ?assertEqual(ok, exml:free_parser(Parser)).
 
 attrs_parsing_test() ->
     {ok, Parser} = exml:new_parser(),
@@ -37,14 +38,16 @@ attrs_parsing_test() ->
     ?assertEqual([{xml_element_start, <<"test">>, [{<<"attr">>, <<"val">>},
                                                    {<<"second_attr">>, <<"val2">>}]},
                   {xml_element_end, <<"test">>}],
-                 Elements).
+                 Elements),
+    ?assertEqual(ok, exml:free_parser(Parser)).
 
 open_tag_test() ->
     {ok, Parser} = exml:new_parser(),
 
     ?assertEqual(ok, exml:parse(Parser, <<"<test>">>, 0)),
     Elements = collect_msgs([]),
-    ?assertEqual([{xml_element_start, <<"test">>, []}], Elements).
+    ?assertEqual([{xml_element_start, <<"test">>, []}], Elements),
+    ?assertEqual(ok, exml:free_parser(Parser)).
 
 cdata_test() ->
     {ok, Parser} = exml:new_parser(),
@@ -54,7 +57,8 @@ cdata_test() ->
     ?assertEqual([{xml_element_start, <<"test">>, []},
                   {xml_cdata, <<"some_cdata stuff">>},
                   {xml_element_end, <<"test">>}],
-                 Elements).
+                 Elements),
+    ?assertEqual(ok, exml:free_parser(Parser)).
 
 collect_msgs(Acc) ->
     receive
