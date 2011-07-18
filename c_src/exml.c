@@ -141,7 +141,9 @@ ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
                                    enif_make_string(env, errstring, ERL_NIF_LATIN1));
         }
 
-    return parser_data->result;
+    return enif_make_tuple(env, 2,
+                           enif_make_atom(env, "ok"),
+                           parser_data->result);
 };
 
 static int load(ErlNifEnv* env, void **priv, ERL_NIF_TERM info)

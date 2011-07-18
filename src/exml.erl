@@ -23,9 +23,14 @@ new_parser() ->
 free_parser(_Parser) ->
     throw({?MODULE, nif_not_loaded}).
 
--spec parse(term(), binary(), boolean()) -> list().
+-spec parse(term(), binary(), boolean()) -> {ok, list()} | {error, string()}.
 parse(Parser, Data, Final) ->
-    lists:reverse(parse_nif(Parser, Data, bool(Final))).
+    case parse_nif(Parser, Data, bool(Final)) of
+        {ok, Res} ->
+            {ok, lists:reverse(Res)};
+        Error ->
+            Error
+    end.
 
 -spec parse_nif(term(), binary(), integer()) -> list().
 parse_nif(_Parser, _Data, _Final) ->
