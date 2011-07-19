@@ -106,6 +106,8 @@ ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     expat_parser *parser_data = XML_GetUserData((XML_Parser)(*parser));
     enif_free(parser_data);
 
+    XML_ParserFree((XML_Parser)(*parser));
+
     return enif_make_atom(env, "ok");
 };
 
