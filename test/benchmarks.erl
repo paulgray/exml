@@ -30,6 +30,7 @@ run_exml(Path, N, Acc) ->
 
     {ok, Parser} = exml:new_parser(),
     run_exml(Fd, Parser),
+    ok = file:close(Fd),
     exml:free_parser(Parser),
 
     Diff = timer:now_diff(now(), T),
