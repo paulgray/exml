@@ -58,7 +58,7 @@ void *character_data_handler(expat_parser *parser_data, const XML_Char *s, int l
     ErlNifBinary cdata;
 
     enif_alloc_binary(len, &cdata);
-    strcpy((char *) cdata.data, (const char *)s);
+    strncpy((char *)cdata.data, (const char *)s, len);
 
     ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 2,
                                          enif_make_atom(parser_data->env, "xml_cdata"),
