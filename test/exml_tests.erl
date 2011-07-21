@@ -52,11 +52,3 @@ cdata_test() ->
                        {xml_element_end, <<"test">>}]},
                  exml:parse(Parser, <<"<test>some_cdata stuff</test>">>, true)),
     ?assertEqual(ok, exml:free_parser(Parser)).
-
-collect_msgs(Acc) ->
-    receive
-        Msg ->
-            collect_msgs([Msg | Acc])
-    after 0 ->
-            lists:reverse(Acc)
-    end.
