@@ -19,31 +19,52 @@ run(Path, N) ->
     application:stop(exml).
 
 run_exml(_, 0, Acc) ->
-    Avg = avg(Acc),
-    io:format("Total: ~w~n"
-              "Avg: ~w~n"
-              "Std dev.: ~w~n",
-              [total(Acc), Avg, std_dev(Acc, Avg)]);
+    stats(exml, Acc);
 run_exml(Path, N, Acc) ->
-    {ok, Fd} = file:open(Path, [read, binary, read_ahead]),
     T = now(),
 
     {ok, Parser} = exml:new_parser(),
-    run_exml(Fd, Parser),
-    ok = file:close(Fd),
+
+    {ok, Bin} = file:read_file(Path),
+    exml:parse(Parser, Bin, true),
     exml:free_parser(Parser),
 
     Diff = timer:now_diff(now(), T),
     run_exml(Path, N-1, [Diff | Acc]).
 
-run_exml(Fd, Parser) ->
-    case file:read_line(Fd) of
-        eof ->
-            ok;
-        {ok, Data} ->
-            exml:parse(Parser, Data, true),
-            run_exml(Fd, Parser)
-    end.
+
+run_xmerl(_, 0, Acc) ->
+    stats(xmerl, Acc);
+run_xmerl(Path, N, Acc) ->
+    T = now(),
+
+    {ok, EventState, _Rest} = xmerl_sax_parser:file(Path, [{event_fun, fun(E, _, XAcc) -> [E | XAcc] end},
+                                                           {event_state, []}]),
+    lists:reverse(EventState),
+
+    Diff = timer:now_diff(now(), T),
+    run_xmerl(Path, N-1, [Diff | Acc]).
+
+
+run_erlsom(_, 0, Acc) ->
+    stats(erlsom, Acc);
+run_erlsom(Path, N, Acc) ->
+    T = now(),
+
+    {ok, XML} = file:read_file(Path),
+    {ok, Events, _} = erlsom:parse_sax(XML, [], fun(E, XAcc) -> [E | XAcc] end),
+    lists:reverse(Events),
+
+    Diff = timer:now_diff(now(), T),
+    run_erlsom(Path, N-1, [Diff | Acc]).
+
+
+stats(Type, Acc) ->
+    Avg = avg(Acc),
+    io:format("~w~nTotal: ~w~n"
+              "Avg: ~w~n"
+              "Std dev.: ~w~n",
+              [Type, total(Acc), Avg, std_dev(Acc, Avg)]).
 
 total(Times) ->
     lists:sum(Times).
@@ -56,9 +77,3 @@ std_dev(Times, Avg) ->
              fun(V, Acc) -> D = V - Avg, Acc + (D * D) end,
              0, Times),
     math:sqrt(Sums / (length(Times) - 1)).
-
-run_xmerl(_, _, _) ->
-    ok.
-
-run_erlsom(_, _, _) ->
-    ok.
