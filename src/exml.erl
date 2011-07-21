@@ -8,12 +8,22 @@
 %%%-------------------------------------------------------------------
 -module(exml).
 
--export([load/1]).
+-export([load/0]).
 -export([new_parser/0, free_parser/1, parse/3]).
 
--spec load(string()) -> any().
-load(Path) ->
-    erlang:load_nif(Path, none).
+-on_load(load/0).
+
+-spec load() -> any().
+load() ->
+    PrivDir = case code:priv_dir(?MODULE) of
+                  {error, _} ->
+                      EbinDir = filename:dirname(code:which(?MODULE)),
+                      AppPath = filename:dirname(EbinDir),
+                      filename:join(AppPath, "priv");
+                  Path ->
+                      Path
+              end,
+    erlang:load_nif(filename:join(PrivDir, "exml"), none).
 
 -spec new_parser() -> term().
 new_parser() ->

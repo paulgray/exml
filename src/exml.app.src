@@ -5,6 +5,5 @@
   {registered, []},
   {applications, [kernel,
                   stdlib]},
-  {mod, {exml_app, []}},
   {env, []}
  ]}.
