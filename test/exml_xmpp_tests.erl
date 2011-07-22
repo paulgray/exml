@@ -9,15 +9,20 @@ basic_parse_test() ->
     {ok, Pid} = exml_xmpp:start_link(),
     ?assert(is_pid(Pid)),
 
+
+    io:format(user, "~p~n~n", [exml_xmpp:parse(Pid, <<"<stream:stream xmlns:stream='http://etherx.jabber.org/streams' version='1.0' to='i.am.banana.com' xml:lang='en'><auth">>)]),
+
     ?assertEqual(
        [#xmlStreamStart{name = <<"stream:stream">>,
-                        attrs = [#xmlAttribute{name = <<"version">>,
+                        attrs = [#xmlAttribute{name = <<"xmlns:stream">>,
+                                               value = <<"http://etherx.jabber.org/streams">>},
+                                 #xmlAttribute{name = <<"version">>,
                                                value = <<"1.0">>},
                                  #xmlAttribute{name = <<"to">>,
                                                value = <<"i.am.banana.com">>},
                                  #xmlAttribute{name = <<"xml:lang">>,
                                                value = <<"en">>}]}],
-       exml_xmpp:parse(Pid, <<"<stream:stream version='1.0' to='i.am.banana.com' xml:lang='en'><auth">>)),
+       exml_xmpp:parse(Pid, <<"<stream:stream xmlns:stream='http://etherx.jabber.org/streams' version='1.0' to='i.am.banana.com' xml:lang='en'><auth">>)),
     ?assertEqual(
        [#xmlElement{name = <<"auth">>,
                     attrs = [#xmlAttribute{name = <<"mechanism">>,

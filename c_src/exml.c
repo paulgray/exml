@@ -2,24 +2,53 @@
 
 static ErlNifResourceType *PARSER_POINTER = NULL;
 
+ErlNifBinary encode_name(expat_parser *parser_data, const XML_Char *name)
+{
+    ErlNifBinary encoded;
+    int name_len, prefix_len;
+    char *name_start;
+    char *prefix_start;
+
+    if((name_start = strchr(name, '\n')))
+        {
+            if((prefix_start = strchr(name_start+1, '\n')))
+                {
+                    name_len = prefix_start - name_start;
+                    prefix_len = strlen(prefix_start+1);
+                    enif_alloc_binary(name_len+prefix_len, &encoded);
+                    strncpy((char *)encoded.data, prefix_start+1, prefix_len);
+                    strncpy((char *)encoded.data+prefix_len, name_start, name_len);
+                    encoded.data[prefix_len] = ':';
+                } else
+                {
+                    name_len = strlen(name_start+1);
+                    enif_alloc_binary(name_len, &encoded);
+                    strncpy((char *)encoded.data, name_start+1, name_len);
+                }
+        } else
+        {
+            enif_alloc_binary(strlen(name), &encoded);
+            strcpy((char *)encoded.data, name);
+        };
+
+    return encoded;
+};
+
 void *start_element_handler(expat_parser *parser_data, const XML_Char *name, const XML_Char **atts)
 {
     ErlNifBinary element_name;
     ERL_NIF_TERM attrs_list = enif_make_list(parser_data->env, 0);
     int i;
 
-    enif_alloc_binary(strlen(name), &element_name);
-    strcpy((char *) element_name.data, (const char *)name);
-
+    element_name = encode_name(parser_data, name);
     for(i = 0; atts[i]; i += 2);
     while(i)
         {
             ErlNifBinary attr_name, attr_value;
 
             enif_alloc_binary(strlen(atts[i-1]), &attr_value);
-            enif_alloc_binary(strlen(atts[i-2]), &attr_name);
             strcpy((char *) attr_value.data, (const char *)atts[i-1]);
-            strcpy((char *) attr_name.data, (const char *)atts[i-2]);
+            attr_name = encode_name(parser_data, atts[i-2]);
 
             ERL_NIF_TERM attr = enif_make_tuple(parser_data->env, 2,
                                                 enif_make_binary(parser_data->env, &attr_name),
@@ -68,6 +97,36 @@ void *character_data_handler(expat_parser *parser_data, const XML_Char *s, int l
     return NULL;
 };
 
+void *namespace_decl_handler(expat_parser *parser_data, const XML_Char *prefix, const XML_Char *uri)
+{
+    ErlNifBinary ns_name, ns_value;
+
+    fprintf(stderr, "Parsing ns decl: %s = %s\n", prefix, uri);
+
+    if(uri == NULL)
+      return NULL;
+
+    if(prefix)
+        {
+            enif_alloc_binary(strlen(prefix)+6, &ns_name);
+            strcpy((char *)ns_name.data, "xmlns:");
+            strcpy((char *)ns_name.data+6, (const char *)prefix);
+        } else
+        {
+            enif_alloc_binary(5, &ns_name);
+            strcpy((char *)ns_name.data, "xmlns");
+        }
+
+    enif_alloc_binary(strlen(uri), &ns_value);
+    strcpy((char *)ns_value.data, uri);
+
+    ERL_NIF_TERM attr = enif_make_tuple(parser_data->env, 2,
+                                        enif_make_binary(parser_data->env, &ns_name),
+                                        enif_make_binary(parser_data->env, &ns_value));
+
+    return NULL;
+};
+
 ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser parser;
@@ -82,6 +141,7 @@ ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     XML_SetStartElementHandler(parser, (XML_StartElementHandler)start_element_handler);
     XML_SetEndElementHandler(parser, (XML_EndElementHandler)end_element_handler);
     XML_SetCharacterDataHandler(parser, (XML_CharacterDataHandler)character_data_handler);
+    XML_SetStartNamespaceDeclHandler(parser, (XML_StartNamespaceDeclHandler)namespace_decl_handler);
 
     XML_SetReturnNSTriplet(parser, 1);
     XML_SetDefaultHandler(parser, NULL);
