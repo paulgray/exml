@@ -12,4 +12,4 @@ clean:
 	./rebar clean
 
 test: compile
-	./rebar skip_deps=true eunit suite=exml_tests
+	./rebar skip_deps=true eunit

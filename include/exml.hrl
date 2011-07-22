@@ -6,3 +6,5 @@
 -record(xmlElement, {name :: binary(),
                      attrs = [] :: list(#xmlAttribute{}),
                      body = [] :: list(#xmlElement{} | #xmlCData{})}).
+
+-type xml_term() :: #xmlElement{} | #xmlAttribute{} | #xmlCData{}.
