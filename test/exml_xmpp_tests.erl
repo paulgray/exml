@@ -48,3 +48,32 @@ basic_parse_test() ->
     ?assertEqual(ok, exml_xmpp:stop(Pid)),
     ?assertNot(is_process_alive(Pid)).
 
+conv_test() ->
+    {ok, Pid} = exml_xmpp:start_link(),
+
+    Elements = exml_xmpp:parse(Pid, <<"<stream:stream xmlns:stream='something'><foo attr='bar'>I am a banana!<baz/></foo></stream:stream>">>),
+    ?assertEqual([#xmlStreamStart{name = <<"stream:stream">>,
+                                  attrs = [#xmlAttribute{name = <<"xmlns:stream">>,
+                                                         value = <<"something">>}]},
+                  #xmlElement{name = <<"foo">>,
+                              attrs = [#xmlAttribute{name = <<"attr">>,
+                                                     value = <<"bar">>}],
+                              body = [#xmlCData{content = <<"I am a banana!">>},
+                                      #xmlElement{name = <<"baz">>}]},
+                  #xmlStreamEnd{name = <<"stream:stream">>}],
+                 Elements),
+    ?assertEqual(ok, exml_xmpp:stop(Pid)),
+
+
+    {ok, Pid2} = exml_xmpp:start_link(),
+
+    ?assertEqual(Elements,
+                 exml_xmpp:parse(Pid2, exml:to_binary(Elements))),
+    ?assertEqual(ok, exml_xmpp:stop(Pid2)),
+
+
+    {ok, Pid3} = exml_xmpp:start_link(),
+
+    ?assertEqual(Elements,
+                 exml_xmpp:parse(Pid3, list_to_binary(exml:to_string(Elements)))),
+    ?assertEqual(ok, exml_xmpp:stop(Pid3)).
