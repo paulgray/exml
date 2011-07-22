@@ -73,10 +73,7 @@ void *start_element_handler(expat_parser *parser_data, const XML_Char *name, con
 
 void *end_element_handler(expat_parser *parser_data, const XML_Char *name)
 {
-    ErlNifBinary element_name;
-
-    enif_alloc_binary(strlen(name), &element_name);
-    strcpy((char *) element_name.data, (const char *)name);
+    ErlNifBinary element_name = encode_name(parser_data, name);
 
     ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 2,
                                          enif_make_atom(parser_data->env, "xml_element_end"),

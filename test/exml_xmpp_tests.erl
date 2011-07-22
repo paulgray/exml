@@ -42,8 +42,7 @@ basic_parse_test() ->
                             #xmlCData{content = <<"This is some CData">>}]}],
        exml_xmpp:parse(Pid, <<"some CData</stream:features>">>)),
     ?assertEqual(
-       [#xmlCData{content = <<" ">>},
-        #xmlStreamEnd{name = <<"stream:stream">>}],
+       [#xmlStreamEnd{name = <<"stream:stream">>}],
        exml_xmpp:parse(Pid, <<" </stream:stream>">>)),
 
     ?assertEqual(ok, exml_xmpp:stop(Pid)),

@@ -13,7 +13,7 @@
 -include("exml_xmpp.hrl").
 
 %% API
--export([start_link/0]).
+-export([start_link/0, stop/1]).
 -export([parse/2]).
 
 %% gen_server callbacks
@@ -21,23 +21,25 @@
          terminate/2, code_change/3]).
 
 -record(state, {parser :: term(),
-                owner :: pid(),
                 stack = [] :: list()}).
 
 -spec start_link() -> {ok, pid()} | {error, term()}.
 start_link() ->
-    gen_server:start_link(?MODULE, self(), []).
+    gen_server:start_link(?MODULE, [], []).
+
+-spec stop(pid()) -> ok.
+stop(Pid) ->
+    gen_server:call(Pid, stop).
 
 -spec parse(pid(), binary()) -> {ok, list(xml_term())} | {error, string()}.
 parse(Parser, Bin) ->
     gen_server:call(Parser, {parse, Bin}).
 
 
-init(Owner) ->
+init([]) ->
     {ok, Parser} = exml:new_parser(),
 
-    {ok, #state{parser = Parser,
-                owner = Owner}}.
+    {ok, #state{parser = Parser}}.
 
 
 handle_call({parse, Bin}, _From, State) ->
@@ -50,7 +52,10 @@ handle_call({parse, Bin}, _From, State) ->
                                 {State, {error, Reason}}
                         end,
 
-    {reply, Reply, NewState}.
+    {reply, Reply, NewState};
+handle_call(stop, _From, State) ->
+    {stop, normal, ok, State}.
+
 
 
 handle_cast(_Cast, State) ->
@@ -84,8 +89,17 @@ parse_events([{xml_element_end, Name} | Rest], [#xmlElement{name = Name}], Acc) 
 parse_events([{xml_element_end, Name} | Rest], [#xmlElement{name = Name} = Element, Top], Acc) ->
     parse_events(Rest, [Top], [xml_element(Element) | Acc]);
 parse_events([{xml_element_end, _Name} | Rest], [Element, Parent | Stack], Acc) ->
-    NewParent = Parent#xmlElement{body = [xml_body(Element, []) | Parent#xmlElement.body]},
-    parse_events(Rest, [NewParent | Stack], Acc).
+    NewParent = Parent#xmlElement{body = [Element | Parent#xmlElement.body]},
+    parse_events(Rest, [NewParent | Stack], Acc);
+parse_events([{xml_cdata, _CData} | Rest], [Top], Acc) ->
+    parse_events(Rest, [Top], Acc);
+parse_events([{xml_cdata, CData} | Rest], [#xmlElement{body = [#xmlCData{content = Content} | RestBody]} = XML | Stack], Acc) ->
+    NewBody = [#xmlCData{content = list_to_binary([Content, CData])} | RestBody],
+    parse_events(Rest, [XML#xmlElement{body = NewBody} | Stack], Acc);
+parse_events([{xml_cdata, CData} | Rest], [Element | Stack], Acc) ->
+    NewBody = [#xmlCData{content = CData} | Element#xmlElement.body],
+    parse_events(Rest, [Element#xmlElement{body = NewBody} | Stack], Acc).
+
 
 -spec xml_attribute({binary(), binary()}) -> #xmlAttribute{}.
 xml_attribute({Name, Value}) ->
