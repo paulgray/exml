@@ -137,6 +137,7 @@ ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
     parser = XML_ParserCreate_MM("UTF-8", &ms, "\n");
     parser_data->env = env;
+    parser_data->xmlns = (ERL_NIF_TERM)NULL;
 
     XML_SetUserData(parser, parser_data);
 
