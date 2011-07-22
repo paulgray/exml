@@ -9,9 +9,6 @@ basic_parse_test() ->
     {ok, Pid} = exml_xmpp:start_link(),
     ?assert(is_pid(Pid)),
 
-
-    io:format(user, "~p~n~n", [exml_xmpp:parse(Pid, <<"<stream:stream xmlns:stream='http://etherx.jabber.org/streams' version='1.0' to='i.am.banana.com' xml:lang='en'><auth">>)]),
-
     ?assertEqual(
        [#xmlStreamStart{name = <<"stream:stream">>,
                         attrs = [#xmlAttribute{name = <<"xmlns:stream">>,

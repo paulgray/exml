@@ -14,6 +14,7 @@ typedef struct
 {
     ErlNifEnv *env;
     ERL_NIF_TERM result;
+    ERL_NIF_TERM xmlns;
 } expat_parser;
 
 ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
