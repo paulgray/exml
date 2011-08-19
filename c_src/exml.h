@@ -18,6 +18,10 @@ typedef struct
     ERL_NIF_TERM xmlns;
 } expat_parser;
 
+// functions 'exported' by exml.c module
+ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 
 // pre-allocated Erlang atoms used commonly within the driver

@@ -126,6 +126,19 @@ void *namespace_decl_handler(expat_parser *parser_data, const XML_Char *prefix, 
     return NULL;
 };
 
+void init_parser(XML_Parser parser, expat_parser *parser_data)
+{
+    XML_SetUserData(parser, parser_data);
+
+    XML_SetStartElementHandler(parser, (XML_StartElementHandler)start_element_handler);
+    XML_SetEndElementHandler(parser, (XML_EndElementHandler)end_element_handler);
+    XML_SetCharacterDataHandler(parser, (XML_CharacterDataHandler)character_data_handler);
+    XML_SetStartNamespaceDeclHandler(parser, (XML_StartNamespaceDeclHandler)namespace_decl_handler);
+
+    XML_SetReturnNSTriplet(parser, 1);
+    XML_SetDefaultHandler(parser, NULL);
+};
+
 ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser parser;
@@ -136,15 +149,7 @@ ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     parser_data->env = env;
     parser_data->xmlns = (ERL_NIF_TERM)NULL;
 
-    XML_SetUserData(parser, parser_data);
-
-    XML_SetStartElementHandler(parser, (XML_StartElementHandler)start_element_handler);
-    XML_SetEndElementHandler(parser, (XML_EndElementHandler)end_element_handler);
-    XML_SetCharacterDataHandler(parser, (XML_CharacterDataHandler)character_data_handler);
-    XML_SetStartNamespaceDeclHandler(parser, (XML_StartNamespaceDeclHandler)namespace_decl_handler);
-
-    XML_SetReturnNSTriplet(parser, 1);
-    XML_SetDefaultHandler(parser, NULL);
+    init_parser(parser, parser_data);
 
     XML_Parser *xml_parser = (XML_Parser *)enif_alloc_resource(PARSER_POINTER, sizeof(XML_Parser));
     *xml_parser = parser;
@@ -152,6 +157,25 @@ ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     enif_release_resource(xml_parser);
 
     return enif_make_tuple(env, 2, OK, parser_resource);
+};
+
+ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    XML_Parser **parser;
+
+    assert(argc == 1);
+
+    if (!enif_get_resource(env, argv[0], PARSER_POINTER, (void **)&parser))
+        return enif_make_badarg(env);
+
+    expat_parser *parser_data = XML_GetUserData((XML_Parser)(*parser));
+    parser_data->result = enif_make_list(env, 0);
+    parser_data->xmlns = (ERL_NIF_TERM)NULL;
+
+    assert(XML_TRUE == XML_ParserReset((XML_Parser)(*parser), "UTF-8"));
+    init_parser((XML_Parser)(*parser), parser_data);
+
+    return OK;
 };
 
 ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
@@ -208,7 +232,7 @@ ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
 static int load(ErlNifEnv* env, void **priv, ERL_NIF_TERM info)
 {
-    PARSER_POINTER = enif_open_resource_type(env, "exml", "parser_pointer", NULL,
+    PARSER_POINTER = enif_open_resource_type(env, NULL, "parser_pointer", NULL,
                                              ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER,
                                              NULL);
 
@@ -239,6 +263,7 @@ static void unload(ErlNifEnv* env, void* priv)
 static ErlNifFunc funcs[] =
     {
         {"new_parser", 0, new_parser},
+        {"reset_parser", 1, reset_parser},
         {"free_parser", 1, free_parser},
         {"parse_nif", 3, parse}
     };

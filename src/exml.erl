@@ -11,7 +11,7 @@
 -include("exml_xmpp.hrl").
 
 -export([load/0]).
--export([new_parser/0, free_parser/1, parse/3]).
+-export([new_parser/0, reset_parser/1, free_parser/1, parse/3]).
 -export([to_string/1, to_binary/1]).
 
 -on_load(load/0).
@@ -30,6 +30,10 @@ load() ->
 
 -spec new_parser() -> term().
 new_parser() ->
+    throw({?MODULE, nif_not_loaded}).
+
+-spec reset_parser(term()) -> ok.
+reset_parser(_Parser) ->
     throw({?MODULE, nif_not_loaded}).
 
 -spec free_parser(term()) -> ok.

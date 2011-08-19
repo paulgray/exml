@@ -14,7 +14,7 @@
 
 %% API
 -export([start_link/0, stop/1]).
--export([parse/2]).
+-export([parse/2, reset_stream/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -34,6 +34,10 @@ stop(Pid) ->
 -spec parse(pid(), binary()) -> {ok, list(xml_term())} | {error, string()}.
 parse(Parser, Bin) ->
     gen_server:call(Parser, {parse, Bin}).
+
+-spec reset_stream(pid()) -> ok.
+reset_stream(Parser) ->
+    gen_server:cast(Parser, reset_stream).
 
 
 init([]) ->
@@ -58,16 +62,17 @@ handle_call(stop, _From, State) ->
 
 
 
-handle_cast(_Cast, State) ->
-    {noreply, State}.
+handle_cast(reset_stream, State) ->
+    exml:reset_parser(State#state.parser),
+    {noreply, State#state{stack = []}}.
 
 
 handle_info(_Info, State) ->
     {noreply, State}.
 
 
-terminate(_Reason, _State) ->
-    ok.
+terminate(_Reason, State) ->
+    catch exml:free_parser(State#state.parser).
 
 
 code_change(_OldVsn, State, _Extra) ->

@@ -77,3 +77,32 @@ conv_test() ->
     ?assertEqual(Elements,
                  exml_xmpp:parse(Pid3, list_to_binary(exml:to_string(Elements)))),
     ?assertEqual(ok, exml_xmpp:stop(Pid3)).
+
+stream_reopen_test() ->
+    {ok, Pid} = exml_xmpp:start_link(),
+
+    Elements = exml_xmpp:parse(Pid, <<"<stream:stream xmlns:stream='something'><foo attr='bar'>I am a banana!<baz/></foo>">>),
+    ?assertEqual([#xmlStreamStart{name = <<"stream:stream">>,
+                                  attrs = [#xmlAttribute{name = <<"xmlns:stream">>,
+                                                         value = <<"something">>}]},
+                  #xmlElement{name = <<"foo">>,
+                              attrs = [#xmlAttribute{name = <<"attr">>,
+                                                     value = <<"bar">>}],
+                              body = [#xmlCData{content = <<"I am a banana!">>},
+                                      #xmlElement{name = <<"baz">>}]}],
+                 Elements),
+
+    ?assertEqual(ok, exml_xmpp:reset_stream(Pid)),
+
+    Elements2 = exml_xmpp:parse(Pid, <<"<stream:stream xmlns:stream='something'><foo attr='bar'>I am a banana!<baz/></foo>">>),
+    ?assertEqual([#xmlStreamStart{name = <<"stream:stream">>,
+                                  attrs = [#xmlAttribute{name = <<"xmlns:stream">>,
+                                                         value = <<"something">>}]},
+                  #xmlElement{name = <<"foo">>,
+                              attrs = [#xmlAttribute{name = <<"attr">>,
+                                                     value = <<"bar">>}],
+                              body = [#xmlCData{content = <<"I am a banana!">>},
+                                      #xmlElement{name = <<"baz">>}]}],
+                 Elements2),
+
+    ?assertEqual(ok, exml_xmpp:stop(Pid)).
