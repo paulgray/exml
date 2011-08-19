@@ -62,8 +62,7 @@ void *start_element_handler(expat_parser *parser_data, const XML_Char *name, con
         attrs_list = enif_make_list_cell(parser_data->env, parser_data->xmlns, attrs_list);
     parser_data->xmlns = (ERL_NIF_TERM)NULL;
 
-    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 3,
-                                         enif_make_atom(parser_data->env, "xml_element_start"),
+    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 3, XML_ELEMENT_START,
                                          enif_make_binary(parser_data->env, &element_name),
                                          attrs_list);
     parser_data->result = enif_make_list_cell(parser_data->env, event, parser_data->result);
@@ -75,8 +74,7 @@ void *end_element_handler(expat_parser *parser_data, const XML_Char *name)
 {
     ErlNifBinary element_name = encode_name(parser_data, name);
 
-    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 2,
-                                         enif_make_atom(parser_data->env, "xml_element_end"),
+    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 2, XML_ELEMENT_END,
                                          enif_make_binary(parser_data->env, &element_name));
     parser_data->result = enif_make_list_cell(parser_data->env, event, parser_data->result);
 
@@ -90,8 +88,7 @@ void *character_data_handler(expat_parser *parser_data, const XML_Char *s, int l
     enif_alloc_binary(len, &cdata);
     strncpy((char *)cdata.data, (const char *)s, len);
 
-    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 2,
-                                         enif_make_atom(parser_data->env, "xml_cdata"),
+    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 2, XML_CDATA,
                                          enif_make_binary(parser_data->env, &cdata));
     parser_data->result = enif_make_list_cell(parser_data->env, event, parser_data->result);
 
@@ -154,7 +151,7 @@ ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     parser_resource = enif_make_resource(env, (void *)xml_parser);
     enif_release_resource(xml_parser);
 
-    return enif_make_tuple(env, 2, enif_make_atom(env, "ok"), parser_resource);
+    return enif_make_tuple(env, 2, OK, parser_resource);
 };
 
 ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
@@ -171,7 +168,7 @@ ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
     XML_ParserFree((XML_Parser)(*parser));
 
-    return enif_make_atom(env, "ok");
+    return OK;
 };
 
 ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
@@ -202,13 +199,11 @@ ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
             errcode = XML_GetErrorCode((XML_Parser)(*parser));
             errstring = (char *)XML_ErrorString(errcode);
 
-            return enif_make_tuple(env, 2, enif_make_atom(env, "error"),
+            return enif_make_tuple(env, 2, ERROR,
                                    enif_make_string(env, errstring, ERL_NIF_LATIN1));
         }
 
-    return enif_make_tuple(env, 2,
-                           enif_make_atom(env, "ok"),
-                           parser_data->result);
+    return enif_make_tuple(env, 2, OK, parser_data->result);
 };
 
 static int load(ErlNifEnv* env, void **priv, ERL_NIF_TERM info)
@@ -216,6 +211,13 @@ static int load(ErlNifEnv* env, void **priv, ERL_NIF_TERM info)
     PARSER_POINTER = enif_open_resource_type(env, "exml", "parser_pointer", NULL,
                                              ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER,
                                              NULL);
+
+    XML_ELEMENT_START = enif_make_atom(env, "xml_element_start");
+    XML_ELEMENT_END = enif_make_atom(env, "xml_element_end");
+    XML_CDATA = enif_make_atom(env, "xml_cdata");
+    OK = enif_make_atom(env, "ok");
+    ERROR = enif_make_atom(env, "error");
+
     return 0;
 };
 
