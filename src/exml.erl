@@ -12,7 +12,7 @@
 
 -export([load/0]).
 -export([new_parser/0, reset_parser/1, free_parser/1, parse/3]).
--export([to_string/1, to_binary/1]).
+-export([to_string/1, to_binary/1, to_iolist/1]).
 
 -on_load(load/0).
 
@@ -53,34 +53,35 @@ parse(Parser, Data, Final) ->
 parse_nif(_Parser, _Data, _Final) ->
     throw({?MODULE, nif_not_loaded}).
 
--spec to_binary(xmlterm() | list(xmlterm())) -> binary().
-to_binary(Element) when is_binary(Element) ->
-    list_to_binary(to_binary_int(Element));
-to_binary(Elements) when is_list(Elements) ->
-    list_to_binary(lists:map(fun to_binary_int/1, Elements)).
-
--spec to_string(xmlterm() | list(xmlterm())) -> string().
+-spec to_string(xmlterm() | [xmlterm()]) -> string().
 to_string(Element) ->
     binary_to_list(to_binary(Element)).
 
--spec to_binary_int(xmlterm()) -> iolist().
-to_binary_int(#xmlelement{name = Name, attrs = Attrs, body = []}) ->
-    ["<", Name, attrs_to_binary(Attrs, []), "/>"];
-to_binary_int(#xmlelement{name = Name, attrs = Attrs, body = Body}) ->
-    ["<", Name, attrs_to_binary(Attrs, []), ">",
-     lists:map(fun to_binary_int/1, Body), "</", Name, ">"];
-to_binary_int(#xmlstreamstart{name = Name, attrs = Attrs}) ->
-    ["<", Name, attrs_to_binary(Attrs, []), ">"];
-to_binary_int(#xmlstreamend{name = Name}) ->
+-spec to_binary(xmlterm() | [xmlterm()]) -> binary().
+to_binary(Element) ->
+    list_to_binary(to_iolist(Element)).
+
+-spec to_iolist(xmlterm() | [xmlterm()]) -> iolist().
+to_iolist(Elements) when is_list(Elements) ->
+    lists:map(fun to_iolist/1, Elements);
+to_iolist(#xmlelement{name = Name, attrs = Attrs, body = []}) ->
+    ["<", Name, attrs_to_iolist(Attrs, []), "/>"];
+to_iolist(#xmlelement{name = Name, attrs = Attrs, body = Body}) ->
+    ["<", Name, attrs_to_iolist(Attrs, []), ">",
+     to_iolist(Body),
+     "</", Name, ">"];
+to_iolist(#xmlstreamstart{name = Name, attrs = Attrs}) ->
+    ["<", Name, attrs_to_iolist(Attrs, []), ">"];
+to_iolist(#xmlstreamend{name = Name}) ->
     ["</", Name, ">"];
-to_binary_int(#xmlcdata{content = Content}) ->
+to_iolist(#xmlcdata{content = Content}) ->
     Content.
 
--spec attrs_to_binary([{binary(), binary()}], iolist()) -> iolist().
-attrs_to_binary([], Acc) ->
+-spec attrs_to_iolist([{binary(), binary()}], iolist()) -> iolist().
+attrs_to_iolist([], Acc) ->
     Acc;
-attrs_to_binary([{Name, Value} | Rest], Acc) ->
-    attrs_to_binary(Rest, [" ", Name, "='", Value, "' " | Acc]).
+attrs_to_iolist([{Name, Value} | Rest], Acc) ->
+    attrs_to_iolist(Rest, [" ", Name, "='", Value, "' " | Acc]).
 
 -spec bool(boolean()) -> 1 | 0.
 bool(true) -> 1;
