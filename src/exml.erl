@@ -53,33 +53,33 @@ parse(Parser, Data, Final) ->
 parse_nif(_Parser, _Data, _Final) ->
     throw({?MODULE, nif_not_loaded}).
 
--spec to_binary(xml_term() | list(xml_term())) -> binary().
+-spec to_binary(xmlterm() | list(xmlterm())) -> binary().
 to_binary(Element) when is_binary(Element) ->
     list_to_binary(to_binary_int(Element));
 to_binary(Elements) when is_list(Elements) ->
     list_to_binary(lists:map(fun to_binary_int/1, Elements)).
 
--spec to_string(xml_term() | list(xml_term())) -> string().
+-spec to_string(xmlterm() | list(xmlterm())) -> string().
 to_string(Element) ->
     binary_to_list(to_binary(Element)).
 
--spec to_binary_int(xml_term()) -> iolist().
-to_binary_int(#xmlElement{name = Name, attrs = Attrs, body = []}) ->
+-spec to_binary_int(xmlterm()) -> iolist().
+to_binary_int(#xmlelement{name = Name, attrs = Attrs, body = []}) ->
     ["<", Name, attrs_to_binary(Attrs, []), "/>"];
-to_binary_int(#xmlElement{name = Name, attrs = Attrs, body = Body}) ->
+to_binary_int(#xmlelement{name = Name, attrs = Attrs, body = Body}) ->
     ["<", Name, attrs_to_binary(Attrs, []), ">",
      lists:map(fun to_binary_int/1, Body), "</", Name, ">"];
-to_binary_int(#xmlStreamStart{name = Name, attrs = Attrs}) ->
+to_binary_int(#xmlstreamstart{name = Name, attrs = Attrs}) ->
     ["<", Name, attrs_to_binary(Attrs, []), ">"];
-to_binary_int(#xmlStreamEnd{name = Name}) ->
+to_binary_int(#xmlstreamend{name = Name}) ->
     ["</", Name, ">"];
-to_binary_int(#xmlCData{content = Content}) ->
+to_binary_int(#xmlcdata{content = Content}) ->
     Content.
 
--spec attrs_to_binary(list(#xmlAttribute{}), iolist()) -> iolist().
+-spec attrs_to_binary([{binary(), binary()}], iolist()) -> iolist().
 attrs_to_binary([], Acc) ->
     Acc;
-attrs_to_binary([#xmlAttribute{name = Name, value = Value} | Rest], Acc) ->
+attrs_to_binary([{Name, Value} | Rest], Acc) ->
     attrs_to_binary(Rest, [" ", Name, "='", Value, "' " | Acc]).
 
 -spec bool(boolean()) -> 1 | 0.

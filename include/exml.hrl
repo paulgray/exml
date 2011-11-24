@@ -1,10 +1,9 @@
--record(xmlAttribute, {name :: binary(),
-                       value :: binary()}).
+-type xmlattr() :: {binary(), binary()}.
 
--record(xmlCData, {content = <<>> :: binary()}).
+-record(xmlcdata, {content = <<>> :: binary()}).
 
--record(xmlElement, {name :: binary(),
-                     attrs = [] :: list(#xmlAttribute{}),
-                     body = [] :: list(#xmlElement{} | #xmlCData{})}).
+-record(xmlelement, {name :: binary(),
+                     attrs = [] :: [xmlattr()],
+                     body =  [] :: [#xmlelement{} | #xmlcdata{}]}).
 
--type xml_term() :: #xmlElement{} | #xmlAttribute{} | #xmlCData{}.
+-type xmlterm() :: #xmlelement{} | xmlattr() | #xmlcdata{}.

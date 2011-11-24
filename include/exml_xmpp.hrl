@@ -1,7 +1,7 @@
 -include("exml.hrl").
 
--record(xmlStreamStart, {name :: binary(),
-                         attrs = [] :: list(#xmlAttribute{})}).
--record(xmlStreamEnd, {name :: binary()}).
+-record(xmlstreamstart, {name :: binary(),
+                         attrs = [] :: [xmlattr()]}).
+-record(xmlstreamend, {name :: binary()}).
 
--type xmpp_term() :: xml_term() | #xmlStreamStart{} | #xmlStreamEnd{}.
+-type xmlstreamelement() :: xmlterm() | #xmlstreamstart{} | #xmlstreamend{}.
