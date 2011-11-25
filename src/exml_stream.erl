@@ -1,16 +1,16 @@
 %%%-------------------------------------------------------------------
 %%% @author Michal Ptaszek <michal.ptaszek@erlang-solutions.com>
 %%% @copyright (C) 2011, Erlang Solutions Ltd.
-%%% @doc Example of XMPP parser using exml library
+%%% @doc XML stream parser using exml library
 %%%
 %%% @end
 %%% Created : 21 Jul 2011 by Michal Ptaszek <michal.ptaszek@erlang-solutions.com>
 %%%-------------------------------------------------------------------
--module(exml_xmpp).
+-module(exml_stream).
 
 -behaviour(gen_server).
 
--include("exml_xmpp.hrl").
+-include("exml_stream.hrl").
 
 %% API
 -export([start_link/0, stop/1]).
@@ -31,7 +31,7 @@ start_link() ->
 stop(Pid) ->
     gen_server:call(Pid, stop).
 
--spec parse(pid(), binary()) -> {ok, list(xml_term())} | {error, string()}.
+-spec parse(pid(), binary()) -> {ok, list(xmlterm())} | {error, string()}.
 parse(Parser, Bin) ->
     gen_server:call(Parser, {parse, Bin}).
 
@@ -79,46 +79,41 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 
--spec parse_events(list(), list(), list()) -> {list(xmpp_term()), list()}.
+-spec parse_events(list(), list(), list()) -> {list(xmlstreamelement()), list()}.
 parse_events([], Stack, Acc) ->
     {lists:reverse(Acc), Stack};
 parse_events([{xml_element_start, Name, Attrs} | Rest], [], Acc) ->
-    NewAttrs = lists:map(fun xml_attribute/1, Attrs),
-    parse_events(Rest, [#xmlElement{name = Name, attrs = NewAttrs}],
-                 [#xmlStreamStart{name = Name, attrs = NewAttrs} | Acc]);
+    NewAttrs = Attrs,
+    parse_events(Rest, [#xmlelement{name = Name, attrs = NewAttrs}],
+                 [#xmlstreamstart{name = Name, attrs = NewAttrs} | Acc]);
 parse_events([{xml_element_start, Name, Attrs} | Rest], Stack, Acc) ->
-    NewAttrs = lists:map(fun xml_attribute/1, Attrs),
-    parse_events(Rest, [#xmlElement{name = Name, attrs = NewAttrs} | Stack], Acc);
-parse_events([{xml_element_end, Name} | Rest], [#xmlElement{name = Name}], Acc) ->
-    parse_events(Rest, [], [#xmlStreamEnd{name = Name} | Acc]);
-parse_events([{xml_element_end, Name} | Rest], [#xmlElement{name = Name} = Element, Top], Acc) ->
+    NewAttrs = Attrs,
+    parse_events(Rest, [#xmlelement{name = Name, attrs = NewAttrs} | Stack], Acc);
+parse_events([{xml_element_end, Name} | Rest], [#xmlelement{name = Name}], Acc) ->
+    parse_events(Rest, [], [#xmlstreamend{name = Name} | Acc]);
+parse_events([{xml_element_end, Name} | Rest], [#xmlelement{name = Name} = Element, Top], Acc) ->
     parse_events(Rest, [Top], [xml_element(Element) | Acc]);
 parse_events([{xml_element_end, _Name} | Rest], [Element, Parent | Stack], Acc) ->
-    NewParent = Parent#xmlElement{body = [Element | Parent#xmlElement.body]},
+    NewParent = Parent#xmlelement{body = [Element | Parent#xmlelement.body]},
     parse_events(Rest, [NewParent | Stack], Acc);
 parse_events([{xml_cdata, _CData} | Rest], [Top], Acc) ->
     parse_events(Rest, [Top], Acc);
-parse_events([{xml_cdata, CData} | Rest], [#xmlElement{body = [#xmlCData{content = Content} | RestBody]} = XML | Stack], Acc) ->
-    NewBody = [#xmlCData{content = list_to_binary([Content, CData])} | RestBody],
-    parse_events(Rest, [XML#xmlElement{body = NewBody} | Stack], Acc);
+parse_events([{xml_cdata, CData} | Rest], [#xmlelement{body = [#xmlcdata{content = Content} | RestBody]} = XML | Stack], Acc) ->
+    NewBody = [#xmlcdata{content = list_to_binary([Content, CData])} | RestBody],
+    parse_events(Rest, [XML#xmlelement{body = NewBody} | Stack], Acc);
 parse_events([{xml_cdata, CData} | Rest], [Element | Stack], Acc) ->
-    NewBody = [#xmlCData{content = CData} | Element#xmlElement.body],
-    parse_events(Rest, [Element#xmlElement{body = NewBody} | Stack], Acc).
+    NewBody = [#xmlcdata{content = CData} | Element#xmlelement.body],
+    parse_events(Rest, [Element#xmlelement{body = NewBody} | Stack], Acc).
 
 
--spec xml_attribute({binary(), binary()}) -> #xmlAttribute{}.
-xml_attribute({Name, Value}) ->
-    #xmlAttribute{name = Name,
-                  value = Value}.
+-spec xml_element(#xmlelement{}) -> #xmlelement{}.
+xml_element(#xmlelement{body = Body} = Element) ->
+    Element#xmlelement{body = xml_body(Body, [])}.
 
--spec xml_element(#xmlElement{}) -> #xmlElement{}.
-xml_element(#xmlElement{body = Body} = Element) ->
-    Element#xmlElement{body = xml_body(Body, [])}.
-
--spec xml_body(list(xml_term()), list(xml_term())) -> list(xml_term()).
+-spec xml_body(list(xmlterm()), list(xmlterm())) -> list(xmlterm()).
 xml_body([], Body) ->
     Body;
-xml_body([#xmlCData{content = Content1}, #xmlCData{content = Content2} | Rest], Body) ->
-    xml_body([#xmlCData{content = list_to_binary([Content2, Content1])} | Rest], Body);
+xml_body([#xmlcdata{content = Content1}, #xmlcdata{content = Content2} | Rest], Body) ->
+    xml_body([#xmlcdata{content = list_to_binary([Content2, Content1])} | Rest], Body);
 xml_body([Element | Rest], Body) ->
     xml_body(Rest, [Element | Body]).
