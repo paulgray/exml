@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(exml).
 
--include("exml_xmpp.hrl").
+-include("exml_stream.hrl").
 
 -export([load/0]).
 -export([new_parser/0, reset_parser/1, free_parser/1, parse/3]).

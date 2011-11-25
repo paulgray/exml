@@ -1,16 +1,16 @@
 %%%-------------------------------------------------------------------
 %%% @author Michal Ptaszek <michal.ptaszek@erlang-solutions.com>
 %%% @copyright (C) 2011, Erlang Solutions Ltd.
-%%% @doc Example of XMPP parser using exml library
+%%% @doc XML stream parser using exml library
 %%%
 %%% @end
 %%% Created : 21 Jul 2011 by Michal Ptaszek <michal.ptaszek@erlang-solutions.com>
 %%%-------------------------------------------------------------------
--module(exml_xmpp).
+-module(exml_stream).
 
 -behaviour(gen_server).
 
--include("exml_xmpp.hrl").
+-include("exml_stream.hrl").
 
 %% API
 -export([start_link/0, stop/1]).
