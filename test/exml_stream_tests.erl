@@ -74,3 +74,9 @@ stream_reopen_test() ->
     {ok, Parser3, Elements2} = exml_stream:parse(Parser2, ?BANANA_STREAM),
     ?assertIsBanana(Elements2),
     ok = exml_stream:free_parser(Parser3).
+
+parse_error_test() ->
+    {ok, Parser0} = exml_stream:new_parser(),
+    Input = <<"top-level non-tag">>,
+    ?assertEqual({error, {"syntax error", Input}}, exml_stream:parse(Parser0, Input)),
+    ok = exml_stream:free_parser(Parser0).

@@ -29,15 +29,15 @@ new_parser() ->
             {error, Error}
     end.
 
--spec parse(#parser{}, iodata()) ->
-        {ok, #parser{}, [xmlstreamelement()]} | {error, any()}.
+-spec parse(#parser{}, binary()) ->
+        {ok, #parser{}, [xmlstreamelement()]} | {error, {string(), binary()}}.
 parse(#parser{event_parser = EventParser, stack = OldStack} = Parser, Input) ->
     case exml:parse(EventParser, Input) of
         {ok, Events} ->
             {Elements, NewStack} = parse_events(Events, OldStack, []),
             {ok, Parser#parser{stack=NewStack}, Elements};
-        Error ->
-            Error %% FIXME: test it
+        {error, Msg} ->
+            {error, {Msg, Input}}
     end.
 
 -spec reset_parser(#parser{}) -> {ok, #parser{}} | {error, any()}.
