@@ -11,8 +11,9 @@
 -include("exml_stream.hrl").
 
 -export([load/0]).
--export([new_parser/0, reset_parser/1, free_parser/1, parse/3]).
+-export([new_parser/0, reset_parser/1, free_parser/1, parse/2, parse_final/2]).
 -export([to_string/1, to_binary/1, to_iolist/1]).
+-export([cdata_to_binary/1]).
 
 -on_load(load/0).
 
@@ -40,9 +41,17 @@ reset_parser(_Parser) ->
 free_parser(_Parser) ->
     throw({?MODULE, nif_not_loaded}).
 
--spec parse(term(), binary(), boolean()) -> {ok, list()} | {error, string()}.
-parse(Parser, Data, Final) ->
-    case parse_nif(Parser, Data, bool(Final)) of
+-spec parse(term(), binary()) -> {ok, list()} | {error, string()}.
+parse(Parser, Data) ->
+    do_parse(Parser, Data, 0).
+
+-spec parse_final(term(), binary()) -> {ok, list()} | {error, string()}.
+parse_final(Parser, Data) ->
+    do_parse(Parser, Data, 1).
+
+-spec do_parse(term(), binary(), 0 | 1) -> {ok, list()} | {error, string()}.
+do_parse(Parser, Data, Final) ->
+    case parse_nif(Parser, Data, Final) of
         {ok, Res} ->
             {ok, lists:reverse(Res)};
         Error ->
@@ -77,12 +86,12 @@ to_iolist(#xmlstreamend{name = Name}) ->
 to_iolist(#xmlcdata{content = Content}) ->
     Content.
 
+-spec cdata_to_binary(#xmlcdata{}) -> binary().
+cdata_to_binary(#xmlcdata{content = Content}) ->
+    list_to_binary([Content]).
+
 -spec attrs_to_iolist([{binary(), binary()}], iolist()) -> iolist().
 attrs_to_iolist([], Acc) ->
     Acc;
 attrs_to_iolist([{Name, Value} | Rest], Acc) ->
     attrs_to_iolist(Rest, [" ", Name, "='", Value, "' " | Acc]).
-
--spec bool(boolean()) -> 1 | 0.
-bool(true) -> 1;
-bool(false) -> 0.
