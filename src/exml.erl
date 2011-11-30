@@ -10,11 +10,11 @@
 
 -include("exml_stream.hrl").
 
--export([to_string/1, to_binary/1, to_iolist/1]).
--export([cdata_to_binary/1]).
+-export([to_list/1, to_binary/1, to_iolist/1]).
+-export([escape_cdata/1, unescape_cdata/1, unescape_cdata_as/2]).
 
--spec to_string(xmlterm() | [xmlterm()]) -> string().
-to_string(Element) ->
+-spec to_list(xmlterm() | [xmlterm()]) -> string().
+to_list(Element) ->
     binary_to_list(to_binary(Element)).
 
 -spec to_binary(xmlterm() | [xmlterm()]) -> binary().
@@ -35,11 +35,27 @@ to_iolist(#xmlstreamstart{name = Name, attrs = Attrs}) ->
 to_iolist(#xmlstreamend{name = Name}) ->
     ["</", Name, ">"];
 to_iolist(#xmlcdata{content = Content}) ->
-    Content.
+    %% it's caller's responsibility to make sure that
+    %% #xmlcdata's content is escaped properly!
+    [Content]. %% ensure we return io*list*
 
--spec cdata_to_binary(#xmlcdata{}) -> binary().
-cdata_to_binary(#xmlcdata{content = Content}) ->
-    list_to_binary([Content]).
+-spec escape_cdata(iodata()) -> #xmlcdata{}.
+escape_cdata(Text) ->
+    AmpEsc = re:replace(Text,   "&",  <<"\\&amp;">>, [global]),
+    LtEsc  = re:replace(AmpEsc, "<",  <<"\\&lt;">>,  [global]),
+    GtEsc  = re:replace(LtEsc,  ">",  <<"\\&gt;">>,  [global]),
+    #xmlcdata{content=GtEsc}.
+
+-spec unescape_cdata(#xmlcdata{}) -> binary().
+unescape_cdata(CData) ->
+    unescape_cdata_as(binary, CData).
+
+-spec unescape_cdata_as(binary|list|iodata, #xmlcdata{}) -> binary().
+unescape_cdata_as(What, #xmlcdata{content=GtEsc}) ->
+    LtEsc  = re:replace(GtEsc,  "&gt;",  ">",   [global]),
+    AmpEsc = re:replace(LtEsc,  "&lt;",  "<",   [global]),
+    Text   = re:replace(AmpEsc, "&amp;", "\\&", [global, {return, What}]),
+    Text.
 
 -spec attrs_to_iolist([{binary(), binary()}], iolist()) -> iolist().
 attrs_to_iolist([], Acc) ->

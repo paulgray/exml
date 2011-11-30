@@ -16,7 +16,6 @@
 
 basic_parse_test() ->
     {ok, Parser} = exml_event:new_parser(),
-
     ?assertEqual({ok, [{xml_element_start, <<"test">>, []},
                        {xml_element_end, <<"test">>}]},
                  exml_event:parse_final(Parser, <<"<test/>">>)),
@@ -24,7 +23,6 @@ basic_parse_test() ->
 
 attrs_parsing_test() ->
     {ok, Parser} = exml_event:new_parser(),
-
     ?assertEqual({ok, [{xml_element_start, <<"test">>, [{<<"attr">>, <<"val">>},
                                                         {<<"second_attr">>, <<"val2">>}]},
                        {xml_element_end, <<"test">>}]},
@@ -33,14 +31,12 @@ attrs_parsing_test() ->
 
 open_tag_test() ->
     {ok, Parser} = exml_event:new_parser(),
-
     ?assertEqual({ok, [{xml_element_start, <<"test">>, []}]},
                  exml_event:parse(Parser, <<"<test>">>)),
     ?assertEqual(ok, exml_event:free_parser(Parser)).
 
 cdata_test() ->
     {ok, Parser} = exml_event:new_parser(),
-
     ?assertEqual({ok, [{xml_element_start, <<"test">>, []},
                        {xml_cdata, <<"some_cdata stuff">>},
                        {xml_element_end, <<"test">>}]},

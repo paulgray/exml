@@ -37,7 +37,7 @@ basic_parse_test() ->
                             _CData]}],
        Features),
     [#xmlelement{body=[_, _, CData]}] = Features,
-    ?assertEqual(<<"This is some CData">>, exml:cdata_to_binary(CData)),
+    ?assertEqual(<<"This is some CData">>, exml:unescape_cdata(CData)),
     ?assertEqual(ok, exml_stream:free_parser(Parser6)).
 
 -define(BANANA_STREAM, <<"<stream:stream xmlns:stream='something'><foo attr='bar'>I am a banana!<baz/></foo></stream:stream>">>).
@@ -50,7 +50,7 @@ basic_parse_test() ->
                       #xmlstreamend{name = <<"stream:stream">>}],
                      Elements),
         [_, #xmlelement{body=[CData|_]}|_] = Elements,
-        ?assertEqual(<<"I am a banana!">>, exml:cdata_to_binary(CData)),
+        ?assertEqual(<<"I am a banana!">>, exml:unescape_cdata(CData)),
         Elements
 end)()).
 
@@ -63,7 +63,7 @@ conv_test() ->
     end,
     Elements = AssertParses(?BANANA_STREAM),
     AssertParses(exml:to_binary(Elements)),
-    AssertParses(list_to_binary(exml:to_string(Elements))),
+    AssertParses(list_to_binary(exml:to_list(Elements))),
     AssertParses(list_to_binary(exml:to_iolist(Elements))).
 
 stream_reopen_test() ->
@@ -80,3 +80,24 @@ parse_error_test() ->
     Input = <<"top-level non-tag">>,
     ?assertEqual({error, {"syntax error", Input}}, exml_stream:parse(Parser0, Input)),
     ok = exml_stream:free_parser(Parser0).
+
+assert_parses_escape_cdata(Text) ->
+    Escaped = exml:escape_cdata(Text),
+    Tag = #xmlelement{name = <<"tag">>, body=[Escaped]},
+    Stream = [#xmlstreamstart{name = <<"s">>}, Tag, #xmlstreamend{name = <<"s">>}],
+    {ok, Parser0} = exml_stream:new_parser(),
+    {ok, Parser1, Elements} = exml_stream:parse(Parser0, exml:to_binary(Stream)),
+    ?assertMatch([#xmlstreamstart{name = <<"s">>},
+                  #xmlelement{name = <<"tag">>, body=[_CData]},
+                  #xmlstreamend{name = <<"s">>}],
+                 Elements),
+    [_, #xmlelement{body=[CData]}, _] = Elements,
+    ?assertEqual(Text, exml:unescape_cdata(CData)),
+    ok = exml_stream:free_parser(Parser1).
+
+cdata_test() ->
+    assert_parses_escape_cdata(<<"I am a banana!">>),
+    assert_parses_escape_cdata(<<"]:-> ]]> >">>),
+    assert_parses_escape_cdata(<<"><tag">>),
+    assert_parses_escape_cdata(<<"<!--">>),
+    assert_parses_escape_cdata(<<"<![CDATA[ test">>).
