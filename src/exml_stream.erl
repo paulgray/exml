@@ -78,7 +78,7 @@ parse_events([{xml_element_end, _Name} | Rest], [Element, Parent | Stack], Acc) 
 parse_events([{xml_cdata, _CData} | Rest], [Top], Acc) ->
     parse_events(Rest, [Top], Acc);
 parse_events([{xml_cdata, CData} | Rest], [#xmlelement{body = [#xmlcdata{content = Content} | RestBody]} = XML | Stack], Acc) ->
-    NewBody = [#xmlcdata{content = list_to_binary([Content, CData])} | RestBody],
+    NewBody = [#xmlcdata{content = [Content | CData]} | RestBody],
     parse_events(Rest, [XML#xmlelement{body = NewBody} | Stack], Acc);
 parse_events([{xml_cdata, CData} | Rest], [Element | Stack], Acc) ->
     NewBody = [#xmlcdata{content = CData} | Element#xmlelement.body],
@@ -92,6 +92,6 @@ xml_element(#xmlelement{body = Body} = Element) ->
 xml_body([], Body) ->
     Body;
 xml_body([#xmlcdata{content = Content1}, #xmlcdata{content = Content2} | Rest], Body) ->
-    xml_body([#xmlcdata{content = list_to_binary([Content2, Content1])} | Rest], Body);
+    xml_body([#xmlcdata{content = [Content2 | Content1]} | Rest], Body);
 xml_body([Element | Rest], Body) ->
     xml_body(Rest, [Element | Body]).

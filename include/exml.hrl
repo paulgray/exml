@@ -1,6 +1,6 @@
 -type xmlattr() :: {binary(), binary()}.
 
--record(xmlcdata, {content = <<>> :: binary()}).
+-record(xmlcdata, {content = [] :: iodata()}).
 
 -record(xmlelement, {name :: binary(),
                      attrs = [] :: [xmlattr()],
