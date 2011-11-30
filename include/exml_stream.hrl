@@ -4,4 +4,4 @@
                          attrs = [] :: [xmlattr()]}).
 -record(xmlstreamend, {name :: binary()}).
 
--type xmlstreamelement() :: xmlterm() | #xmlstreamstart{} | #xmlstreamend{}.
+-type xmlstreamelement() :: #xmlelement{} | #xmlstreamstart{} | #xmlstreamend{}.

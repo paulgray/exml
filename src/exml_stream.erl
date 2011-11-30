@@ -22,7 +22,7 @@
 
 -spec new_parser() -> {ok, #parser{}} | {error, any()}.
 new_parser() ->
-    case exml:new_parser() of
+    case exml_event:new_parser() of
         {ok, EventParser} ->
             {ok, #parser{event_parser=EventParser}};
         {error, Error} ->
@@ -32,7 +32,7 @@ new_parser() ->
 -spec parse(#parser{}, binary()) ->
         {ok, #parser{}, [xmlstreamelement()]} | {error, {string(), binary()}}.
 parse(#parser{event_parser = EventParser, stack = OldStack} = Parser, Input) ->
-    case exml:parse(EventParser, Input) of
+    case exml_event:parse(EventParser, Input) of
         {ok, Events} ->
             {Elements, NewStack} = parse_events(Events, OldStack, []),
             {ok, Parser#parser{stack=NewStack}, Elements};
@@ -42,9 +42,9 @@ parse(#parser{event_parser = EventParser, stack = OldStack} = Parser, Input) ->
 
 -spec reset_parser(#parser{}) -> {ok, #parser{}} | {error, any()}.
 reset_parser(#parser{event_parser=EventParser}) ->
-    case exml:reset_parser(EventParser) of
+    case exml_event:reset_parser(EventParser) of
         ok ->
-            %% drop all the state
+            %% drop all the state except event_parser
             {ok, #parser{event_parser=EventParser}};
         Error ->
             {error, Error}
@@ -52,7 +52,7 @@ reset_parser(#parser{event_parser=EventParser}) ->
 
 -spec free_parser(#parser{}) -> ok | {error, any()}.
 free_parser(#parser{event_parser = EventParser}) ->
-    exml:free_parser(EventParser).
+    exml_event:free_parser(EventParser).
 
 %%%===================================================================
 %%% Helpers
