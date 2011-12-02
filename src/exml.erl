@@ -61,4 +61,4 @@ unescape_cdata_as(What, #xmlcdata{content=GtEsc}) ->
 attrs_to_iolist([], Acc) ->
     Acc;
 attrs_to_iolist([{Name, Value} | Rest], Acc) ->
-    attrs_to_iolist(Rest, [" ", Name, "='", Value, "' " | Acc]).
+    attrs_to_iolist(Rest, [" ", Name, "='", Value, "'" | Acc]).
