@@ -10,51 +10,11 @@
 
 -include("exml_stream.hrl").
 
--export([load/0]).
--export([new_parser/0, reset_parser/1, free_parser/1, parse/3]).
--export([to_string/1, to_binary/1, to_iolist/1]).
+-export([to_list/1, to_binary/1, to_iolist/1]).
+-export([escape_cdata/1, unescape_cdata/1, unescape_cdata_as/2]).
 
--on_load(load/0).
-
--spec load() -> any().
-load() ->
-    PrivDir = case code:priv_dir(?MODULE) of
-                  {error, _} ->
-                      EbinDir = filename:dirname(code:which(?MODULE)),
-                      AppPath = filename:dirname(EbinDir),
-                      filename:join(AppPath, "priv");
-                  Path ->
-                      Path
-              end,
-    erlang:load_nif(filename:join(PrivDir, "exml"), none).
-
--spec new_parser() -> term().
-new_parser() ->
-    throw({?MODULE, nif_not_loaded}).
-
--spec reset_parser(term()) -> ok.
-reset_parser(_Parser) ->
-    throw({?MODULE, nif_not_loaded}).
-
--spec free_parser(term()) -> ok.
-free_parser(_Parser) ->
-    throw({?MODULE, nif_not_loaded}).
-
--spec parse(term(), binary(), boolean()) -> {ok, list()} | {error, string()}.
-parse(Parser, Data, Final) ->
-    case parse_nif(Parser, Data, bool(Final)) of
-        {ok, Res} ->
-            {ok, lists:reverse(Res)};
-        Error ->
-            Error
-    end.
-
--spec parse_nif(term(), binary(), integer()) -> list().
-parse_nif(_Parser, _Data, _Final) ->
-    throw({?MODULE, nif_not_loaded}).
-
--spec to_string(xmlterm() | [xmlterm()]) -> string().
-to_string(Element) ->
+-spec to_list(xmlterm() | [xmlterm()]) -> string().
+to_list(Element) ->
     binary_to_list(to_binary(Element)).
 
 -spec to_binary(xmlterm() | [xmlterm()]) -> binary().
@@ -75,14 +35,30 @@ to_iolist(#xmlstreamstart{name = Name, attrs = Attrs}) ->
 to_iolist(#xmlstreamend{name = Name}) ->
     ["</", Name, ">"];
 to_iolist(#xmlcdata{content = Content}) ->
-    Content.
+    %% it's caller's responsibility to make sure that
+    %% #xmlcdata's content is escaped properly!
+    [Content]. %% ensure we return io*list*
+
+-spec escape_cdata(iodata()) -> #xmlcdata{}.
+escape_cdata(Text) ->
+    AmpEsc = re:replace(Text,   "&",  <<"\\&amp;">>, [global]),
+    LtEsc  = re:replace(AmpEsc, "<",  <<"\\&lt;">>,  [global]),
+    GtEsc  = re:replace(LtEsc,  ">",  <<"\\&gt;">>,  [global]),
+    #xmlcdata{content=GtEsc}.
+
+-spec unescape_cdata(#xmlcdata{}) -> binary().
+unescape_cdata(CData) ->
+    unescape_cdata_as(binary, CData).
+
+-spec unescape_cdata_as(binary|list|iodata, #xmlcdata{}) -> binary().
+unescape_cdata_as(What, #xmlcdata{content=GtEsc}) ->
+    LtEsc  = re:replace(GtEsc,  "&gt;",  ">",   [global]),
+    AmpEsc = re:replace(LtEsc,  "&lt;",  "<",   [global]),
+    Text   = re:replace(AmpEsc, "&amp;", "\\&", [global, {return, What}]),
+    Text.
 
 -spec attrs_to_iolist([{binary(), binary()}], iolist()) -> iolist().
 attrs_to_iolist([], Acc) ->
     Acc;
 attrs_to_iolist([{Name, Value} | Rest], Acc) ->
-    attrs_to_iolist(Rest, [" ", Name, "='", Value, "' " | Acc]).
-
--spec bool(boolean()) -> 1 | 0.
-bool(true) -> 1;
-bool(false) -> 0.
+    attrs_to_iolist(Rest, [" ", Name, "='", Value, "'" | Acc]).

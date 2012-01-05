@@ -1,5 +1,5 @@
-#ifndef EXML_H
-#define EXML_H
+#ifndef EXML_EVENT_H
+#define EXML_EVENT_H
 
 #include <erl_nif.h>
 #include <expat.h>
@@ -18,7 +18,7 @@ typedef struct
     ERL_NIF_TERM xmlns;
 } expat_parser;
 
-// functions 'exported' by exml.c module
+// functions 'exported' by exml_event.c module
 ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);

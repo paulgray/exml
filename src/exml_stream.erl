@@ -1,83 +1,62 @@
 %%%-------------------------------------------------------------------
 %%% @author Michal Ptaszek <michal.ptaszek@erlang-solutions.com>
 %%% @copyright (C) 2011, Erlang Solutions Ltd.
-%%% @doc XML stream parser using exml library
+%%% @doc XML stream parser
 %%%
 %%% @end
 %%% Created : 21 Jul 2011 by Michal Ptaszek <michal.ptaszek@erlang-solutions.com>
 %%%-------------------------------------------------------------------
 -module(exml_stream).
 
--behaviour(gen_server).
-
 -include("exml_stream.hrl").
+-export([new_parser/0, parse/2, reset_parser/1, free_parser/1]).
 
-%% API
--export([start_link/0, stop/1]).
--export([parse/2, reset_stream/1]).
+-record(parser, {
+        event_parser,
+        stack = []
+}).
 
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2, code_change/3]).
+%%%===================================================================
+%%% Public API
+%%%===================================================================
 
--record(state, {parser :: term(),
-                stack = [] :: list()}).
+-spec new_parser() -> {ok, #parser{}} | {error, any()}.
+new_parser() ->
+    case exml_event:new_parser() of
+        {ok, EventParser} ->
+            {ok, #parser{event_parser=EventParser}};
+        {error, Error} ->
+            {error, Error}
+    end.
 
--spec start_link() -> {ok, pid()} | {error, term()}.
-start_link() ->
-    gen_server:start_link(?MODULE, [], []).
+-spec parse(#parser{}, binary()) ->
+        {ok, #parser{}, [xmlstreamelement()]} | {error, {string(), binary()}}.
+parse(#parser{event_parser = EventParser, stack = OldStack} = Parser, Input) ->
+    case exml_event:parse(EventParser, Input) of
+        {ok, Events} ->
+            {Elements, NewStack} = parse_events(Events, OldStack, []),
+            {ok, Parser#parser{stack=NewStack}, Elements};
+        {error, Msg} ->
+            {error, {Msg, Input}}
+    end.
 
--spec stop(pid()) -> ok.
-stop(Pid) ->
-    gen_server:call(Pid, stop).
+-spec reset_parser(#parser{}) -> {ok, #parser{}} | {error, any()}.
+reset_parser(#parser{event_parser=EventParser}) ->
+    case exml_event:reset_parser(EventParser) of
+        ok ->
+            %% drop all the state except event_parser
+            {ok, #parser{event_parser=EventParser}};
+        Error ->
+            {error, Error}
+    end.
 
--spec parse(pid(), binary()) -> {ok, list(xmlterm())} | {error, string()}.
-parse(Parser, Bin) ->
-    gen_server:call(Parser, {parse, Bin}).
+-spec free_parser(#parser{}) -> ok | {error, any()}.
+free_parser(#parser{event_parser = EventParser}) ->
+    exml_event:free_parser(EventParser).
 
--spec reset_stream(pid()) -> ok.
-reset_stream(Parser) ->
-    gen_server:cast(Parser, reset_stream).
-
-
-init([]) ->
-    {ok, Parser} = exml:new_parser(),
-
-    {ok, #state{parser = Parser}}.
-
-
-handle_call({parse, Bin}, _From, State) ->
-    {NewState, Reply} = case exml:parse(State#state.parser, Bin, false) of
-                            {ok, Events} ->
-                                {Elements, Stack} = parse_events(Events, State#state.stack, []),
-                                {State#state{stack = Stack}, Elements};
-
-                            {error, Reason} ->
-                                {State, {error, Reason}}
-                        end,
-
-    {reply, Reply, NewState};
-handle_call(stop, _From, State) ->
-    {stop, normal, ok, State}.
-
-
-
-handle_cast(reset_stream, State) ->
-    exml:reset_parser(State#state.parser),
-    {noreply, State#state{stack = []}}.
-
-
-handle_info(_Info, State) ->
-    {noreply, State}.
-
-
-terminate(_Reason, State) ->
-    catch exml:free_parser(State#state.parser).
-
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
+%%%===================================================================
+%%% Helpers
+%%%===================================================================
 
 -spec parse_events(list(), list(), list()) -> {list(xmlstreamelement()), list()}.
 parse_events([], Stack, Acc) ->
@@ -99,12 +78,11 @@ parse_events([{xml_element_end, _Name} | Rest], [Element, Parent | Stack], Acc) 
 parse_events([{xml_cdata, _CData} | Rest], [Top], Acc) ->
     parse_events(Rest, [Top], Acc);
 parse_events([{xml_cdata, CData} | Rest], [#xmlelement{body = [#xmlcdata{content = Content} | RestBody]} = XML | Stack], Acc) ->
-    NewBody = [#xmlcdata{content = list_to_binary([Content, CData])} | RestBody],
+    NewBody = [#xmlcdata{content = [Content | CData]} | RestBody],
     parse_events(Rest, [XML#xmlelement{body = NewBody} | Stack], Acc);
 parse_events([{xml_cdata, CData} | Rest], [Element | Stack], Acc) ->
     NewBody = [#xmlcdata{content = CData} | Element#xmlelement.body],
     parse_events(Rest, [Element#xmlelement{body = NewBody} | Stack], Acc).
-
 
 -spec xml_element(#xmlelement{}) -> #xmlelement{}.
 xml_element(#xmlelement{body = Body} = Element) ->
@@ -114,6 +92,6 @@ xml_element(#xmlelement{body = Body} = Element) ->
 xml_body([], Body) ->
     Body;
 xml_body([#xmlcdata{content = Content1}, #xmlcdata{content = Content2} | Rest], Body) ->
-    xml_body([#xmlcdata{content = list_to_binary([Content2, Content1])} | Rest], Body);
+    xml_body([#xmlcdata{content = [Content2 | Content1]} | Rest], Body);
 xml_body([Element | Rest], Body) ->
     xml_body(Rest, [Element | Body]).
