@@ -1,4 +1,4 @@
-#include "exml.h"
+#include "exml_event.h"
 
 static ErlNifResourceType *PARSER_POINTER = NULL;
 
@@ -268,4 +268,4 @@ static ErlNifFunc funcs[] =
         {"parse_nif", 3, parse}
     };
 
-ERL_NIF_INIT(exml, funcs, &load, &reload, &upgrade, &unload);
+ERL_NIF_INIT(exml_event, funcs, &load, &reload, &upgrade, &unload);
