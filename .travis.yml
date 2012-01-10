@@ -5,5 +5,7 @@ branches:
 notifications:
         email: paulgray2@gmail.com
 env:
+        - R15B
+        - R14B04
         - R14B03
         - R14B02
