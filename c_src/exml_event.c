@@ -171,6 +171,7 @@ ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     expat_parser *parser_data = XML_GetUserData((XML_Parser)(*parser));
     parser_data->result = enif_make_list(env, 0);
     parser_data->xmlns = (ERL_NIF_TERM)NULL;
+    parser_data->env = env;
 
     assert(XML_TRUE == XML_ParserReset((XML_Parser)(*parser), "UTF-8"));
     init_parser((XML_Parser)(*parser), parser_data);
@@ -215,6 +216,7 @@ ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
     expat_parser *parser_data = XML_GetUserData((XML_Parser)(*parser));
     parser_data->result = enif_make_list(env, 0);
+    parser_data->env = env;
     XML_SetUserData((XML_Parser)(*parser), parser_data);
 
     res = XML_Parse((XML_Parser)(*parser), (const char *)stream.data, stream.size, is_final);
