@@ -12,10 +12,14 @@
 -export([attr/2, attr/3]).
 -export([cdata/1]).
 
+-type path() :: [cdata | {element, binary()} | {attr, binary()}].
+
 %% gets the element contained in leftmost path
+-spec path(#xmlelement{}, path()) -> #xmlelement{} | binary() | undefined.
 path(Element, Path) ->
     path(Element, Path, undefined).
 
+-spec path(#xmlelement{}, path(), Other) -> #xmlelement{} | binary() | Other.
 path(Element, [], _) ->
     Element;
 path(#xmlelement{} = Element, [{element, Name} | Rest], Default) ->
@@ -28,9 +32,11 @@ path(#xmlelement{} = Element, [{attr, Name}], Default) ->
 path(_, _, Default) ->
     Default.
 
+-spec subelement(#xmlelement{}, binary()) -> #xmlelement{} | undefined.
 subelement(Element, Name) ->
     subelement(Element, Name, undefined).
 
+-spec subelement(#xmlelement{}, binary(), Other) -> #xmlelement{} | Other.
 subelement(#xmlelement{body = Body}, Name, Default) ->
     case lists:keyfind(Name, #xmlelement.name, Body) of
         false ->
@@ -39,12 +45,15 @@ subelement(#xmlelement{body = Body}, Name, Default) ->
             Result
     end.
 
+-spec cdata(#xmlelement{}) -> binary().
 cdata(#xmlelement{body = Body}) ->
     list_to_binary([exml:unescape_cdata(C) || #xmlcdata{}=C <- Body]).
 
+-spec attr(#xmlelement{}, binary()) -> binary() | undefined.
 attr(Element, Name) ->
     attr(Element, Name, undefined).
 
+-spec attr(#xmlelement{}, binary(), Other) -> binary() | Other.
 attr(#xmlelement{attrs = Attrs}, Name, Default) ->
     case lists:keyfind(Name, 1, Attrs) of
         {Name, Value} ->
