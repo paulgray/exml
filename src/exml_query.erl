@@ -20,7 +20,7 @@ path(Element, Path) ->
     path(Element, Path, undefined).
 
 -spec path(#xmlelement{}, path(), Other) -> #xmlelement{} | binary() | Other.
-path(Element, [], _) ->
+path(#xmlelement{} = Element, [], _) ->
     Element;
 path(#xmlelement{} = Element, [{element, Name} | Rest], Default) ->
     Child = subelement(Element, Name),
