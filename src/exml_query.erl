@@ -14,16 +14,17 @@
 
 -type path() :: [cdata | {element, binary()} | {attr, binary()}].
 
-%% gets the element contained in leftmost path
+%% @doc gets the element/attr/cdata contained in the leftmost path
 -spec path(#xmlelement{}, path()) -> #xmlelement{} | binary() | undefined.
 path(Element, Path) ->
     path(Element, Path, undefined).
 
+%% @doc gets the element/attr/cdata contained in the leftmost path
 -spec path(#xmlelement{}, path(), Other) -> #xmlelement{} | binary() | Other.
 path(#xmlelement{} = Element, [], _) ->
     Element;
 path(#xmlelement{} = Element, [{element, Name} | Rest], Default) ->
-    Child = subelement(Element, Name),
+    Child = subelement(Element, Name), % may return undefined
     path(Child, Rest, Default);
 path(#xmlelement{} = Element, [cdata], _) ->
     cdata(Element);
