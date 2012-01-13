@@ -2,3 +2,5 @@
 /priv/*so
 /c_src/*o
 /.eunit/
+/logs/
+/test/*.beam
