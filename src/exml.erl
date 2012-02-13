@@ -10,6 +10,7 @@
 
 -include("exml_stream.hrl").
 
+-export([parse/1]).
 -export([to_list/1, to_binary/1, to_iolist/1]).
 -export([escape_cdata/1, unescape_cdata/1, unescape_cdata_as/2]).
 
@@ -62,3 +63,18 @@ attrs_to_iolist([], Acc) ->
     Acc;
 attrs_to_iolist([{Name, Value} | Rest], Acc) ->
     attrs_to_iolist(Rest, [" ", Name, "='", Value, "'" | Acc]).
+
+-spec parse(binary()) -> {ok, #xmlelement{}} | {error, any()}.
+parse(XML) ->
+    {ok, Parser} = exml_stream:new_parser(),
+    Stream = <<"<stream>", XML/binary, "</stream>">>,
+    Result = case exml_stream:parse(Parser, Stream) of
+                 {ok, _, [#xmlstreamstart{}, Tree, #xmlstreamend{}]} ->
+                     {ok, Tree};
+                 {ok, _, Other} ->
+                     {error, {bad_parse, Other}};
+                 {error, Error} ->
+                     {error, Error}
+             end,
+    ok = exml_stream:free_parser(Parser),
+    Result.

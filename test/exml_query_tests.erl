@@ -70,9 +70,6 @@ failed_path_query_test() ->
 %% helpers
 %%--------------------------------------------------------------------
 
-xml(XML) ->
-    {ok, P0} = exml_stream:new_parser(),
-    Stream = <<"<stream>", XML/binary, "</stream>">>,
-    {ok, P1, [_, Tree, _]} = exml_stream:parse(P0, Stream),
-    ok = exml_stream:free_parser(P1),
+xml(Raw) ->
+    {ok, Tree} = exml:parse(Raw),
     Tree.
