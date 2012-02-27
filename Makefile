@@ -2,14 +2,17 @@
 
 all: deps compile
 
-compile:
+compile: rebar
 	./rebar compile
 
-deps:
+deps: rebar
 	./rebar get-deps
 
-clean:
+clean: rebar
 	./rebar clean
 
 test: compile
 	./rebar skip_deps=true eunit
+
+rebar:
+	wget http://cloud.github.com/downloads/basho/rebar/rebar && chmod u+x rebar
