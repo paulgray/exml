@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(exml_eqc_tests).
 
+-ifdef(EQC).
+
 -include_lib("eqc/include/eqc.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("exml.hrl").
@@ -70,3 +72,5 @@ merge_cdata([Else | Rest], Acc) ->
     merge_cdata(Rest, [Else | Acc]);
 merge_cdata([], Acc) ->
     lists:reverse(Acc).
+
+-endif.
