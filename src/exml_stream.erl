@@ -73,7 +73,8 @@ parse_events([{xml_element_end, Name} | Rest], [#xmlelement{name = Name}], Acc) 
 parse_events([{xml_element_end, Name} | Rest], [#xmlelement{name = Name} = Element, Top], Acc) ->
     parse_events(Rest, [Top], [xml_element(Element) | Acc]);
 parse_events([{xml_element_end, _Name} | Rest], [Element, Parent | Stack], Acc) ->
-    NewParent = Parent#xmlelement{body = [Element | Parent#xmlelement.body]},
+    NewElement = Element#xmlelement{body = lists:reverse(Element#xmlelement.body)},
+    NewParent = Parent#xmlelement{body = [NewElement | Parent#xmlelement.body]},
     parse_events(Rest, [NewParent | Stack], Acc);
 parse_events([{xml_cdata, _CData} | Rest], [Top], Acc) ->
     parse_events(Rest, [Top], Acc);
