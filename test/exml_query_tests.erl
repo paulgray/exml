@@ -29,9 +29,20 @@ element_query_test() ->
     ?assertEqual(xml(<<"<problem no='1'>is too big</problem>">>),
                  exml_query:path(?MY_SPOON, [{element, <<"problem">>}])).
 
+elements_query_test() ->
+    Exemplar = [xml(<<"<problem no='1'>is too big</problem>">>),
+                xml(<<"<problem no='2'>is too big</problem>">>),
+                xml(<<"<problem no='3'>is too big</problem>">>)],
+    ?assertEqual(Exemplar, exml_query:subelements(?MY_SPOON, <<"problem">>)),
+    ?assertEqual(Exemplar, exml_query:path(?MY_SPOON,
+                                           [{elements, <<"problem">>}])).
+
 attribute_query_test() ->
     ?assertEqual(<<"my">>, exml_query:attr(?MY_SPOON, <<"whose">>)),
     ?assertEqual(<<"my">>, exml_query:path(?MY_SPOON, [{attr, <<"whose">>}])),
+    ?assertEqual([<<"1">>, <<"2">>, <<"3">>],
+                 exml_query:path(?MY_SPOON, [{elements, <<"problem">>},
+                                             {attr, <<"no">>}])),
     ?assertEqual(undefined, exml_query:attr(?MY_SPOON, <<"banana">>)),
     ?assertEqual('IAmA', exml_query:attr(?MY_SPOON, <<"banana">>, 'IAmA')).
 
