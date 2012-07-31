@@ -9,6 +9,7 @@
 
 -export([path/2, path/3]).
 -export([subelement/2, subelement/3]).
+-export([subelements/2]).
 -export([attr/2, attr/3]).
 -export([cdata/1]).
 
@@ -26,6 +27,9 @@ path(#xmlelement{} = Element, [], _) ->
 path(#xmlelement{} = Element, [{element, Name} | Rest], Default) ->
     Child = subelement(Element, Name), % may return undefined
     path(Child, Rest, Default);
+path(#xmlelement{} = Element, [{elements, Name} | Rest], Default) ->
+    Children = subelements(Element, Name),
+    lists:concat([[path(Child, Rest, Default) || Child <- Children]]);
 path(#xmlelement{} = Element, [cdata], _) ->
     cdata(Element);
 path(#xmlelement{} = Element, [{attr, Name}], Default) ->
@@ -45,6 +49,15 @@ subelement(#xmlelement{body = Body}, Name, Default) ->
         Result ->
             Result
     end.
+
+-spec subelements(#xmlelement{}, binary()) -> [#xmlelement{}].
+subelements(#xmlelement{body = Body}, Name) ->
+    lists:filter(fun(#xmlelement{name = N}) when N =:= Name ->
+                        true;
+                    (_) ->
+                        false
+                 end,
+                 Body).
 
 -spec cdata(#xmlelement{}) -> binary().
 cdata(#xmlelement{body = Body}) ->
