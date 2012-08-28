@@ -2,7 +2,7 @@
 
 static ErlNifResourceType *PARSER_POINTER = NULL;
 
-ErlNifBinary encode_name(expat_parser *parser_data, const XML_Char *name)
+static ErlNifBinary encode_name(expat_parser *parser_data, const XML_Char *name)
 {
     ErlNifBinary encoded;
     int name_len, prefix_len;
@@ -34,7 +34,7 @@ ErlNifBinary encode_name(expat_parser *parser_data, const XML_Char *name)
     return encoded;
 };
 
-void *start_element_handler(expat_parser *parser_data, const XML_Char *name, const XML_Char **atts)
+static void *start_element_handler(expat_parser *parser_data, const XML_Char *name, const XML_Char **atts)
 {
     ErlNifBinary element_name;
     ERL_NIF_TERM attrs_list = enif_make_list(parser_data->env, 0);
@@ -70,7 +70,7 @@ void *start_element_handler(expat_parser *parser_data, const XML_Char *name, con
     return NULL;
 };
 
-void *end_element_handler(expat_parser *parser_data, const XML_Char *name)
+static void *end_element_handler(expat_parser *parser_data, const XML_Char *name)
 {
     ErlNifBinary element_name = encode_name(parser_data, name);
 
@@ -81,7 +81,7 @@ void *end_element_handler(expat_parser *parser_data, const XML_Char *name)
     return NULL;
 };
 
-void *character_data_handler(expat_parser *parser_data, const XML_Char *s, int len)
+static void *character_data_handler(expat_parser *parser_data, const XML_Char *s, int len)
 {
     ErlNifBinary cdata;
 
@@ -95,7 +95,7 @@ void *character_data_handler(expat_parser *parser_data, const XML_Char *s, int l
     return NULL;
 };
 
-void *namespace_decl_handler(expat_parser *parser_data, const XML_Char *prefix, const XML_Char *uri)
+static void *namespace_decl_handler(expat_parser *parser_data, const XML_Char *prefix, const XML_Char *uri)
 {
     ErlNifBinary ns_name, ns_value;
 
@@ -126,7 +126,7 @@ void *namespace_decl_handler(expat_parser *parser_data, const XML_Char *prefix, 
     return NULL;
 };
 
-void init_parser(XML_Parser parser, expat_parser *parser_data)
+static void init_parser(XML_Parser parser, expat_parser *parser_data)
 {
     XML_SetUserData(parser, parser_data);
 
@@ -139,7 +139,7 @@ void init_parser(XML_Parser parser, expat_parser *parser_data)
     XML_SetDefaultHandler(parser, NULL);
 };
 
-ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser parser;
     expat_parser *parser_data = (expat_parser *)enif_alloc(sizeof(expat_parser));
@@ -159,7 +159,7 @@ ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     return enif_make_tuple(env, 2, OK, parser_resource);
 };
 
-ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser **parser;
 
@@ -179,7 +179,7 @@ ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     return OK;
 };
 
-ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser **parser;
 
@@ -196,7 +196,7 @@ ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     return OK;
 };
 
-ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser **parser;
     int is_final, res, errcode;
