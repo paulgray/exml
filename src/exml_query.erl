@@ -27,9 +27,6 @@ path(#xmlelement{} = Element, [], _) ->
 path(#xmlelement{} = Element, [{element, Name} | Rest], Default) ->
     Child = subelement(Element, Name), % may return undefined
     path(Child, Rest, Default);
-path(#xmlelement{} = Element, [{elements, Name} | Rest], Default) ->
-    Children = subelements(Element, Name),
-    lists:concat([[path(Child, Rest, Default) || Child <- Children]]);
 path(#xmlelement{} = Element, [cdata], _) ->
     cdata(Element);
 path(#xmlelement{} = Element, [{attr, Name}], Default) ->
