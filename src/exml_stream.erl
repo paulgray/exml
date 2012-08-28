@@ -73,26 +73,27 @@ parse_events([{xml_element_end, Name} | Rest], [#xmlelement{name = Name}], Acc) 
 parse_events([{xml_element_end, Name} | Rest], [#xmlelement{name = Name} = Element, Top], Acc) ->
     parse_events(Rest, [Top], [xml_element(Element) | Acc]);
 parse_events([{xml_element_end, _Name} | Rest], [Element, Parent | Stack], Acc) ->
-    NewElement = Element#xmlelement{body = lists:reverse(Element#xmlelement.body)},
-    NewParent = Parent#xmlelement{body = [NewElement | Parent#xmlelement.body]},
+    NewElement = Element#xmlelement{children = lists:reverse(Element#xmlelement.children)},
+    NewParent = Parent#xmlelement{children = [NewElement | Parent#xmlelement.children]},
     parse_events(Rest, [NewParent | Stack], Acc);
 parse_events([{xml_cdata, _CData} | Rest], [Top], Acc) ->
     parse_events(Rest, [Top], Acc);
-parse_events([{xml_cdata, CData} | Rest], [#xmlelement{body = [#xmlcdata{content = Content} | RestBody]} = XML | Stack], Acc) ->
-    NewBody = [#xmlcdata{content = list_to_binary([Content, CData])} | RestBody],
-    parse_events(Rest, [XML#xmlelement{body = NewBody} | Stack], Acc);
+parse_events([{xml_cdata, CData} | Rest], [#xmlelement{children = [#xmlcdata{content = Content} |
+                                                                   RestChildren]} = XML | Stack], Acc) ->
+    NewChildren = [#xmlcdata{content = list_to_binary([Content, CData])} | RestChildren],
+    parse_events(Rest, [XML#xmlelement{children = NewChildren} | Stack], Acc);
 parse_events([{xml_cdata, CData} | Rest], [Element | Stack], Acc) ->
-    NewBody = [#xmlcdata{content = CData} | Element#xmlelement.body],
-    parse_events(Rest, [Element#xmlelement{body = NewBody} | Stack], Acc).
+    NewChildren = [#xmlcdata{content = CData} | Element#xmlelement.children],
+    parse_events(Rest, [Element#xmlelement{children = NewChildren} | Stack], Acc).
 
 -spec xml_element(#xmlelement{}) -> #xmlelement{}.
-xml_element(#xmlelement{body = Body} = Element) ->
-    Element#xmlelement{body = xml_body(Body, [])}.
+xml_element(#xmlelement{children = Children} = Element) ->
+    Element#xmlelement{children = xml_children(Children, [])}.
 
--spec xml_body(list(xmlterm()), list(xmlterm())) -> list(xmlterm()).
-xml_body([], Body) ->
-    Body;
-xml_body([#xmlcdata{content = Content1}, #xmlcdata{content = Content2} | Rest], Body) ->
-    xml_body([#xmlcdata{content = list_to_binary([Content2, Content1])} | Rest], Body);
-xml_body([Element | Rest], Body) ->
-    xml_body(Rest, [Element | Body]).
+-spec xml_children(list(xmlterm()), list(xmlterm())) -> list(xmlterm()).
+xml_children([], Children) ->
+    Children;
+xml_children([#xmlcdata{content = Content1}, #xmlcdata{content = Content2} | Rest], Children) ->
+    xml_children([#xmlcdata{content = list_to_binary([Content2, Content1])} | Rest], Children);
+xml_children([Element | Rest], Children) ->
+    xml_children(Rest, [Element | Children]).

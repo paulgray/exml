@@ -27,12 +27,12 @@ xml_element() ->
     ?SIZED(Size, ?LET({Name, Attrs}, {ascii_text(), list(xml_attr())},
                       #xmlelement{name = list_to_binary(Name),
                                   attrs = lists:ukeysort(1, Attrs),
-                                  body = xml_body(Size)})).
+                                  children = xml_children(Size)})).
 
-xml_body(0) ->
+xml_children(0) ->
     [];
-xml_body(Size) ->
-    oneof([xml_body(0),
+xml_children(Size) ->
+    oneof([xml_children(0),
            list(xml_child(Size div 3))]).
 
 xml_child(Size) ->
@@ -40,7 +40,7 @@ xml_child(Size) ->
          oneof([#xmlcdata{content = list_to_binary(Bin)},
                 #xmlelement{name = list_to_binary(Bin),
                             attrs = lists:ukeysort(1, Attrs),
-                            body = xml_body(Size)}])).
+                            children = xml_children(Size)}])).
 
 prop_encode_decode() ->
     ?FORALL(Doc, xml_element(),
@@ -55,19 +55,19 @@ encode_decode_test_() ->
 encode_decode() ->
     ?assert(eqc:quickcheck(eqc:numtests(500, prop_encode_decode()))).
 
-unify(#xmlelement{attrs = Attrs, body = Body} = Element) ->
+unify(#xmlelement{attrs = Attrs, children = Children} = Element) ->
     Element#xmlelement{attrs = lists:sort(Attrs),
-                       body = lists:map(fun unify/1, Body)};
+                       children = lists:map(fun unify/1, Children)};
 unify(#xmlcdata{} = CData) ->
     CData.
 
-merge_cdata(#xmlelement{body = Body} = Element) ->
-    Element#xmlelement{body = merge_cdata(Body, [])}.
+merge_cdata(#xmlelement{children = Children} = Element) ->
+    Element#xmlelement{children = merge_cdata(Children, [])}.
 
 merge_cdata([#xmlcdata{content = C1}, #xmlcdata{content = C2} | Rest], Acc) ->
     merge_cdata([#xmlcdata{content = <<C1/binary, C2/binary>>} | Rest], Acc);
-merge_cdata([#xmlelement{body = Body} = Element | Rest], Acc) ->
-    merge_cdata(Rest, [Element#xmlelement{body = merge_cdata(Body, [])} | Acc]);
+merge_cdata([#xmlelement{children = Children} = Element | Rest], Acc) ->
+    merge_cdata(Rest, [Element#xmlelement{children = merge_cdata(Children, [])} | Acc]);
 merge_cdata([Else | Rest], Acc) ->
     merge_cdata(Rest, [Else | Acc]);
 merge_cdata([], Acc) ->

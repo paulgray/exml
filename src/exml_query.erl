@@ -42,8 +42,8 @@ subelement(Element, Name) ->
     subelement(Element, Name, undefined).
 
 -spec subelement(#xmlelement{}, binary(), Other) -> #xmlelement{} | Other.
-subelement(#xmlelement{body = Body}, Name, Default) ->
-    case lists:keyfind(Name, #xmlelement.name, Body) of
+subelement(#xmlelement{children = Children}, Name, Default) ->
+    case lists:keyfind(Name, #xmlelement.name, Children) of
         false ->
             Default;
         Result ->
@@ -51,17 +51,16 @@ subelement(#xmlelement{body = Body}, Name, Default) ->
     end.
 
 -spec subelements(#xmlelement{}, binary()) -> [#xmlelement{}].
-subelements(#xmlelement{body = Body}, Name) ->
+subelements(#xmlelement{children = Children}, Name) ->
     lists:filter(fun(#xmlelement{name = N}) when N =:= Name ->
                         true;
                     (_) ->
                         false
-                 end,
-                 Body).
+                 end, Children).
 
 -spec cdata(#xmlelement{}) -> binary().
-cdata(#xmlelement{body = Body}) ->
-    list_to_binary([exml:unescape_cdata(C) || #xmlcdata{}=C <- Body]).
+cdata(#xmlelement{children = Children}) ->
+    list_to_binary([exml:unescape_cdata(C) || #xmlcdata{} = C <- Children]).
 
 -spec attr(#xmlelement{}, binary()) -> binary() | undefined.
 attr(Element, Name) ->

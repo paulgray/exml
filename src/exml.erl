@@ -25,11 +25,11 @@ to_binary(Element) ->
 -spec to_iolist(xmlterm() | [xmlterm()]) -> iolist().
 to_iolist(Elements) when is_list(Elements) ->
     lists:map(fun to_iolist/1, Elements);
-to_iolist(#xmlelement{name = Name, attrs = Attrs, body = []}) ->
+to_iolist(#xmlelement{name = Name, attrs = Attrs, children = []}) ->
     ["<", Name, attrs_to_iolist(Attrs, []), "/>"];
-to_iolist(#xmlelement{name = Name, attrs = Attrs, body = Body}) ->
+to_iolist(#xmlelement{name = Name, attrs = Attrs, children = Children}) ->
     ["<", Name, attrs_to_iolist(Attrs, []), ">",
-     to_iolist(Body),
+     to_iolist(Children),
      "</", Name, ">"];
 to_iolist(#xmlstreamstart{name = Name, attrs = Attrs}) ->
     ["<", Name, attrs_to_iolist(Attrs, []), ">"];

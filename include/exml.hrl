@@ -4,6 +4,6 @@
 
 -record(xmlelement, {name :: binary(),
                      attrs = [] :: [xmlattr()],
-                     body =  [] :: [#xmlelement{} | #xmlcdata{}]}).
+                     children =  [] :: [#xmlelement{} | #xmlcdata{}]}).
 
 -type xmlterm() :: #xmlelement{} | xmlattr() | #xmlcdata{}.
