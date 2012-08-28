@@ -8,6 +8,7 @@
 -include("exml.hrl").
 
 -export([path/2, path/3]).
+-export([paths/2]).
 -export([subelement/2, subelement/3]).
 -export([subelements/2]).
 -export([attr/2, attr/3]).
@@ -20,7 +21,7 @@
 path(Element, Path) ->
     path(Element, Path, undefined).
 
-%% @doc gets the element/attr/cdata contained in the leftmost path
+%% @doc gets the element/attr/cdata in the leftmost possible described path
 -spec path(#xmlelement{}, path(), Other) -> #xmlelement{} | binary() | Other.
 path(#xmlelement{} = Element, [], _) ->
     Element;
@@ -33,6 +34,20 @@ path(#xmlelement{} = Element, [{attr, Name}], Default) ->
     attr(Element, Name, Default);
 path(_, _, Default) ->
     Default.
+
+%% @doc gets the elements/attrs/cdatas reachable by the described path
+-spec paths(#xmlelement{}, path()) -> [#xmlelement{} | binary()].
+paths(#xmlelement{} = Element, []) ->
+    [Element];
+paths(#xmlelement{} = Element, [{element, Name} | Rest]) ->
+    Children = subelements(Element, Name),
+    lists:append([paths(Child, Rest) || Child <- Children]);
+paths(#xmlelement{} = Element, [cdata]) ->
+    [cdata(Element)];
+paths(#xmlelement{attrs = Attrs}, [{attr, Name}]) ->
+    lists:sublist([V || {N, V} <- Attrs, N =:= Name], 1);
+paths(#xmlelement{}, Path) when is_list(Path) ->
+    [].
 
 -spec subelement(#xmlelement{}, binary()) -> #xmlelement{} | undefined.
 subelement(Element, Name) ->
