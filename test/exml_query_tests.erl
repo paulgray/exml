@@ -17,6 +17,16 @@
                           "<problem no='2'>is too big</problem>",
                           "<problem no='3'>is too big</problem>",
                         "</spoon>">>)).
+-define (HTML, xml(<<"<html>
+                          <li>
+                              <ul><i>My</i> spoon is too
+                                  <span class=\"size\">big</span></ul>
+                              <ul>My <i>spoon</i> is too
+                                  <span class=\"size\">big</span></ul>
+                              <ul>My spoon <i>is</i> too
+                                  <span class=\"size\">big</span></ul>
+                          </li>
+                      </html>">>)).
 
 %%--------------------------------------------------------------------
 %% tests
@@ -33,16 +43,11 @@ elements_query_test() ->
     Exemplar = [xml(<<"<problem no='1'>is too big</problem>">>),
                 xml(<<"<problem no='2'>is too big</problem>">>),
                 xml(<<"<problem no='3'>is too big</problem>">>)],
-    ?assertEqual(Exemplar, exml_query:subelements(?MY_SPOON, <<"problem">>)),
-    ?assertEqual(Exemplar, exml_query:path(?MY_SPOON,
-                                           [{elements, <<"problem">>}])).
+    ?assertEqual(Exemplar, exml_query:subelements(?MY_SPOON, <<"problem">>)).
 
 attribute_query_test() ->
     ?assertEqual(<<"my">>, exml_query:attr(?MY_SPOON, <<"whose">>)),
     ?assertEqual(<<"my">>, exml_query:path(?MY_SPOON, [{attr, <<"whose">>}])),
-    ?assertEqual([<<"1">>, <<"2">>, <<"3">>],
-                 exml_query:path(?MY_SPOON, [{elements, <<"problem">>},
-                                             {attr, <<"no">>}])),
     ?assertEqual(undefined, exml_query:attr(?MY_SPOON, <<"banana">>)),
     ?assertEqual('IAmA', exml_query:attr(?MY_SPOON, <<"banana">>, 'IAmA')).
 
@@ -76,6 +81,26 @@ failed_path_query_test() ->
     ?assertEqual('IAmA', exml_query:path(?MY_SPOON,
                                          [{element, <<"banana">>}],
                                          'IAmA')).
+
+paths_query_test() ->
+    ?assertEqual([?MY_SPOON], exml_query:paths(?MY_SPOON, [])),
+    ?assertEqual([<<"is too big">>, <<"is too big">>, <<"is too big">>],
+                  exml_query:paths(?MY_SPOON, [{element, <<"problem">>},
+                                               cdata])),
+    ?assertEqual([<<"1">>, <<"2">>, <<"3">>],
+                 exml_query:paths(?MY_SPOON, [{element, <<"problem">>},
+                                              {attr, <<"no">>}])),
+    ?assertEqual([], exml_query:paths(?MY_SPOON, [{element, <<"banana">>}])),
+    ?assertEqual([<<"My">>, <<"spoon">>, <<"is">>],
+                 exml_query:paths(?HTML, [{element, <<"li">>},
+                                          {element, <<"ul">>},
+                                          {element, <<"i">>},
+                                          cdata])),
+    ?assertEqual([<<"size">>, <<"size">>, <<"size">>],
+                 exml_query:paths(?HTML, [{element, <<"li">>},
+                                          {element, <<"ul">>},
+                                          {element, <<"span">>},
+                                          {attr, <<"class">>}])).
 
 %%--------------------------------------------------------------------
 %% helpers
