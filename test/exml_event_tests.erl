@@ -16,29 +16,42 @@
 
 basic_parse_test() ->
     {ok, Parser} = exml_event:new_parser(),
-    ?assertEqual({ok, [{xml_element_start, <<"test">>, []},
+    ?assertEqual({ok, [{xml_element_start, <<"test">>, [], []},
                        {xml_element_end, <<"test">>}]},
                  exml_event:parse_final(Parser, <<"<test/>">>)),
     ?assertEqual(ok, exml_event:free_parser(Parser)).
 
 attrs_parsing_test() ->
     {ok, Parser} = exml_event:new_parser(),
-    ?assertEqual({ok, [{xml_element_start, <<"test">>, [{<<"attr">>, <<"val">>},
-                                                        {<<"second_attr">>, <<"val2">>}]},
+    ?assertEqual({ok, [{xml_element_start, <<"test">>, [], [{<<"attr">>, <<"val">>},
+                                                            {<<"second_attr">>, <<"val2">>}]},
                        {xml_element_end, <<"test">>}]},
                  exml_event:parse_final(Parser, <<"<test attr='val' second_attr='val2'/>">>)),
     ?assertEqual(ok, exml_event:free_parser(Parser)).
 
 open_tag_test() ->
     {ok, Parser} = exml_event:new_parser(),
-    ?assertEqual({ok, [{xml_element_start, <<"test">>, []}]},
+    ?assertEqual({ok, [{xml_element_start, <<"test">>, [], []}]},
                  exml_event:parse(Parser, <<"<test>">>)),
     ?assertEqual(ok, exml_event:free_parser(Parser)).
 
 cdata_test() ->
     {ok, Parser} = exml_event:new_parser(),
-    ?assertEqual({ok, [{xml_element_start, <<"test">>, []},
+    ?assertEqual({ok, [{xml_element_start, <<"test">>, [], []},
                        {xml_cdata, <<"some_cdata stuff">>},
                        {xml_element_end, <<"test">>}]},
                  exml_event:parse_final(Parser, <<"<test>some_cdata stuff</test>">>)),
+    ?assertEqual(ok, exml_event:free_parser(Parser)).
+
+xmlns_declaration_test() ->
+    {ok, Parser} = exml_event:new_parser(),
+    ?assertEqual({ok, [{xml_element_start, <<"str:stream">>,
+                        %% note the reverse order of namespaces
+                        [{<<"naked-ns">>, none},
+                         {<<"stream-ns">>, <<"str">>}],
+                        []}]},
+                 exml_event:parse(Parser, <<"<str:stream"
+                                            " xmlns:str='stream-ns'"
+                                            " xmlns='naked-ns'
+                                            >">>)),
     ?assertEqual(ok, exml_event:free_parser(Parser)).
