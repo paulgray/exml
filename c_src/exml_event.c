@@ -58,14 +58,13 @@ static void *start_element_handler(expat_parser *parser_data, const XML_Char *na
             i -= 2;
         };
 
-    if(parser_data->xmlns)
-        attrs_list = enif_make_list_cell(parser_data->env, parser_data->xmlns, attrs_list);
-    parser_data->xmlns = (ERL_NIF_TERM)NULL;
 
-    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 3, XML_ELEMENT_START,
+    ERL_NIF_TERM event = enif_make_tuple(parser_data->env, 4, XML_ELEMENT_START,
                                          enif_make_binary(parser_data->env, &element_name),
+                                         parser_data->xmlns,
                                          attrs_list);
     parser_data->result = enif_make_list_cell(parser_data->env, event, parser_data->result);
+    parser_data->xmlns = enif_make_list(parser_data->env, 0);
 
     return NULL;
 };
@@ -97,31 +96,32 @@ static void *character_data_handler(expat_parser *parser_data, const XML_Char *s
 
 static void *namespace_decl_handler(expat_parser *parser_data, const XML_Char *prefix, const XML_Char *uri)
 {
-    ErlNifBinary ns_name, ns_value;
+    ErlNifBinary ns_prefix_bin, ns_uri_bin;
+    ERL_NIF_TERM ns_prefix, ns_uri, ns_pair;
 
     if(uri == NULL)
         {
-            parser_data->xmlns = (ERL_NIF_TERM)NULL;
+            /* parser_data->xmlns = (ERL_NIF_TERM)NULL; */
+            fprintf(stderr, "URI IS NULL?\n");
             return NULL;
         }
 
     if(prefix)
         {
-            enif_alloc_binary(strlen(prefix)+6, &ns_name);
-            strcpy((char *)ns_name.data, "xmlns:");
-            strcpy((char *)ns_name.data+6, (const char *)prefix);
+            enif_alloc_binary(strlen(prefix), &ns_prefix_bin);
+            strcpy((char *)ns_prefix_bin.data, (const char *)prefix);
+            ns_prefix = enif_make_binary(parser_data->env, &ns_prefix_bin);
         } else
         {
-            enif_alloc_binary(5, &ns_name);
-            strcpy((char *)ns_name.data, "xmlns");
+            ns_prefix = NONE;
         }
 
-    enif_alloc_binary(strlen(uri), &ns_value);
-    strcpy((char *)ns_value.data, uri);
+    enif_alloc_binary(strlen(uri), &ns_uri_bin);
+    strcpy((char *)ns_uri_bin.data, uri);
+    ns_uri = enif_make_binary(parser_data->env, &ns_uri_bin);
 
-    parser_data->xmlns = enif_make_tuple(parser_data->env, 2,
-                                         enif_make_binary(parser_data->env, &ns_name),
-                                         enif_make_binary(parser_data->env, &ns_value));
+    ns_pair = enif_make_tuple(parser_data->env, 2, ns_uri, ns_prefix);
+    parser_data->xmlns = enif_make_list_cell(parser_data->env, ns_pair, parser_data->xmlns);
 
     return NULL;
 };
@@ -147,7 +147,7 @@ static ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
 
     parser = XML_ParserCreate_MM("UTF-8", &ms, "\n");
     parser_data->env = env;
-    parser_data->xmlns = (ERL_NIF_TERM)NULL;
+    parser_data->xmlns = enif_make_list(env, 0);
 
     init_parser(parser, parser_data);
 
@@ -170,7 +170,7 @@ static ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM ar
 
     expat_parser *parser_data = XML_GetUserData((XML_Parser)(*parser));
     parser_data->result = enif_make_list(env, 0);
-    parser_data->xmlns = (ERL_NIF_TERM)NULL;
+    parser_data->xmlns = enif_make_list(env, 0);
     parser_data->env = env;
 
     assert(XML_TRUE == XML_ParserReset((XML_Parser)(*parser), "UTF-8"));
@@ -242,6 +242,7 @@ static int load(ErlNifEnv* env, void **priv, ERL_NIF_TERM info)
     XML_ELEMENT_END = enif_make_atom(env, "xml_element_end");
     XML_CDATA = enif_make_atom(env, "xml_cdata");
     OK = enif_make_atom(env, "ok");
+    NONE = enif_make_atom(env, "none");
     ERROR = enif_make_atom(env, "error");
 
     return 0;

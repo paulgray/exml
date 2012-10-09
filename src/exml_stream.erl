@@ -61,12 +61,12 @@ free_parser(#parser{event_parser = EventParser}) ->
 -spec parse_events(list(), list(), list()) -> {list(xmlstreamelement()), list()}.
 parse_events([], Stack, Acc) ->
     {lists:reverse(Acc), Stack};
-parse_events([{xml_element_start, Name, Attrs} | Rest], [], Acc) ->
-    NewAttrs = Attrs,
+parse_events([{xml_element_start, Name, NSs, Attrs} | Rest], [], Acc) ->
+    NewAttrs = nss_to_fake_attrs(NSs, []) ++ Attrs,
     parse_events(Rest, [#xmlelement{name = Name, attrs = NewAttrs}],
                  [#xmlstreamstart{name = Name, attrs = NewAttrs} | Acc]);
-parse_events([{xml_element_start, Name, Attrs} | Rest], Stack, Acc) ->
-    NewAttrs = Attrs,
+parse_events([{xml_element_start, Name, NSs, Attrs} | Rest], Stack, Acc) ->
+    NewAttrs = nss_to_fake_attrs(NSs, []) ++ Attrs,
     parse_events(Rest, [#xmlelement{name = Name, attrs = NewAttrs} | Stack], Acc);
 parse_events([{xml_element_end, Name} | Rest], [#xmlelement{name = Name}], Acc) ->
     parse_events(Rest, [], [#xmlstreamend{name = Name} | Acc]);
@@ -97,3 +97,12 @@ xml_children([#xmlcdata{content = Content1}, #xmlcdata{content = Content2} | Res
     xml_children([#xmlcdata{content = list_to_binary([Content2, Content1])} | Rest], Children);
 xml_children([Element | Rest], Children) ->
     xml_children(Rest, [Element | Children]).
+
+-spec nss_to_fake_attrs([{binary(), binary() | none}], [{binary(), binary()}]) ->
+        [{binary(), binary()}].
+nss_to_fake_attrs([{Uri, none} | Rest], Acc) ->
+    nss_to_fake_attrs(Rest, [{<<"xmlns">>, Uri} | Acc]);
+nss_to_fake_attrs([{Uri, Prefix} | Rest], Acc) ->
+    nss_to_fake_attrs(Rest, [{<<"xmlns:", Prefix/binary>>, Uri} | Acc]);
+nss_to_fake_attrs([], Acc) ->
+    Acc. %% no lists:reverse, as we got the argument list in reversed order
