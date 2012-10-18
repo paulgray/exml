@@ -9,12 +9,19 @@
 -module(exml_stream).
 
 -include("exml_stream.hrl").
--export([new_parser/0, parse/2, reset_parser/1, free_parser/1]).
+
+-export([new_parser/0,
+         parse/2,
+         reset_parser/1,
+         free_parser/1]).
+-export_type([parser/0]).
 
 -record(parser, {
         event_parser,
         stack = []
 }).
+
+-type parser() :: #parser{}.
 
 %%%===================================================================
 %%% Public API
