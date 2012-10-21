@@ -8,7 +8,7 @@
 -module(exml_query_tests).
 
 -include_lib("eunit/include/eunit.hrl").
--include("exml.hrl").
+-include("exml_stream.hrl").
 
 -compile(export_all).
 
@@ -45,11 +45,18 @@ elements_query_test() ->
                 xml(<<"<problem no='3'>is too big</problem>">>)],
     ?assertEqual(Exemplar, exml_query:subelements(?MY_SPOON, <<"problem">>)).
 
-attribute_query_test() ->
+xmlelement_attribute_query_test() ->
     ?assertEqual(<<"my">>, exml_query:attr(?MY_SPOON, <<"whose">>)),
     ?assertEqual(<<"my">>, exml_query:path(?MY_SPOON, [{attr, <<"whose">>}])),
     ?assertEqual(undefined, exml_query:attr(?MY_SPOON, <<"banana">>)),
     ?assertEqual('IAmA', exml_query:attr(?MY_SPOON, <<"banana">>, 'IAmA')).
+
+xmlstreamstart_attribute_query_test() ->
+    XmlStreamStart = #xmlstreamstart{name = <<"stream:stream">>, attrs = [{<<"whose">>, <<"my">>}]},
+    ?assertEqual(<<"my">>, exml_query:attr(XmlStreamStart, <<"whose">>)),
+    ?assertEqual(<<"my">>, exml_query:path(XmlStreamStart, [{attr, <<"whose">>}])),
+    ?assertEqual(undefined, exml_query:attr(XmlStreamStart, <<"banana">>)),
+    ?assertEqual('IAmA', exml_query:attr(XmlStreamStart, <<"banana">>, 'IAmA')).
 
 cdata_query_test() ->
     ?assertEqual(<<"">>, exml_query:cdata(?MY_SPOON)),
