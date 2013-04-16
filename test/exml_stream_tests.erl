@@ -21,7 +21,7 @@ basic_parse_test() ->
        StreamStart),
     {ok, Parser3, Auth} = exml_stream:parse(Parser2, <<" mechanism='DIGEST-MD5'/>">>),
     ?assertEqual(
-       [#xmlelement{name = <<"auth">>, attrs = [{<<"mechanism">>, <<"DIGEST-MD5">>}]}],
+       [#xmlel{name = <<"auth">>, attrs = [{<<"mechanism">>, <<"DIGEST-MD5">>}]}],
        Auth),
     {ok, Parser4, Empty1} = exml_stream:parse(Parser3, <<"<stream:features><bind xmlns='some_ns'">>),
     ?assertEqual([], Empty1),
@@ -29,14 +29,14 @@ basic_parse_test() ->
     ?assertEqual([], Empty2),
     {ok, Parser6, Features} = exml_stream:parse(Parser5, <<"some CData</stream:features>">>),
     ?assertMatch(
-       [#xmlelement{name = <<"stream:features">>,
-                    children = [#xmlelement{name = <<"bind">>,
+       [#xmlel{name = <<"stream:features">>,
+                    children = [#xmlel{name = <<"bind">>,
                                             attrs = [{<<"xmlns">>, <<"some_ns">>}]},
-                                #xmlelement{name = <<"session">>,
+                                #xmlel{name = <<"session">>,
                                             attrs = [{<<"xmlns">>, <<"some_other">>}]},
                                 _CData]}],
        Features),
-    [#xmlelement{children=[_, _, CData]}] = Features,
+    [#xmlel{children=[_, _, CData]}] = Features,
     ?assertEqual(<<"This is some CData">>, exml:unescape_cdata(CData)),
     ?assertEqual(ok, exml_stream:free_parser(Parser6)).
 
@@ -44,12 +44,12 @@ basic_parse_test() ->
 -define(assertIsBanana(Elements), (fun() -> % fun instead of begin/end because we bind CData in unhygenic macro
                                            ?assertMatch([#xmlstreamstart{name = <<"stream:stream">>,
                                                                          attrs = [{<<"xmlns:stream">>, <<"something">>}]},
-                                                         #xmlelement{name = <<"foo">>,
+                                                         #xmlel{name = <<"foo">>,
                                                                      attrs = [{<<"attr">>, <<"bar">>}],
-                                                                     children = [_CData, #xmlelement{name = <<"baz">>}]},
+                                                                     children = [_CData, #xmlel{name = <<"baz">>}]},
                                                          #xmlstreamend{name = <<"stream:stream">>}],
                                                         Elements),
-                                           [_, #xmlelement{children=[CData|_]}|_] = Elements,
+                                           [_, #xmlel{children=[CData|_]}|_] = Elements,
                                            ?assertEqual(<<"I am a banana!">>, exml:unescape_cdata(CData)),
                                            Elements
                                    end)()).
@@ -83,15 +83,15 @@ parse_error_test() ->
 
 assert_parses_escape_cdata(Text) ->
     Escaped = exml:escape_cdata(Text),
-    Tag = #xmlelement{name = <<"tag">>, children=[Escaped]},
+    Tag = #xmlel{name = <<"tag">>, children=[Escaped]},
     Stream = [#xmlstreamstart{name = <<"s">>}, Tag, #xmlstreamend{name = <<"s">>}],
     {ok, Parser0} = exml_stream:new_parser(),
     {ok, Parser1, Elements} = exml_stream:parse(Parser0, exml:to_binary(Stream)),
     ?assertMatch([#xmlstreamstart{name = <<"s">>},
-                  #xmlelement{name = <<"tag">>, children=[_CData]},
+                  #xmlel{name = <<"tag">>, children=[_CData]},
                   #xmlstreamend{name = <<"s">>}],
                  Elements),
-    [_, #xmlelement{children=[CData]}, _] = Elements,
+    [_, #xmlel{children=[CData]}, _] = Elements,
     ?assertEqual(Text, exml:unescape_cdata(CData)),
     ok = exml_stream:free_parser(Parser1).
 

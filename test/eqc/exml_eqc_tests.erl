@@ -25,7 +25,7 @@ xml_attr() ->
 
 xml_element() ->
     ?SIZED(Size, ?LET({Name, Attrs}, {ascii_text(), list(xml_attr())},
-                      #xmlelement{name = list_to_binary(Name),
+                      #xmlel{name = list_to_binary(Name),
                                   attrs = lists:ukeysort(1, Attrs),
                                   children = xml_children(Size)})).
 
@@ -38,7 +38,7 @@ xml_children(Size) ->
 xml_child(Size) ->
     ?LET({Bin, Attrs}, {ascii_text(), list(xml_attr())},
          oneof([#xmlcdata{content = list_to_binary(Bin)},
-                #xmlelement{name = list_to_binary(Bin),
+                #xmlel{name = list_to_binary(Bin),
                             attrs = lists:ukeysort(1, Attrs),
                             children = xml_children(Size)}])).
 
@@ -55,19 +55,19 @@ encode_decode_test_() ->
 encode_decode() ->
     ?assert(eqc:quickcheck(eqc:numtests(500, prop_encode_decode()))).
 
-unify(#xmlelement{attrs = Attrs, children = Children} = Element) ->
-    Element#xmlelement{attrs = lists:sort(Attrs),
+unify(#xmlel{attrs = Attrs, children = Children} = Element) ->
+    Element#xmlel{attrs = lists:sort(Attrs),
                        children = lists:map(fun unify/1, Children)};
 unify(#xmlcdata{} = CData) ->
     CData.
 
-merge_cdata(#xmlelement{children = Children} = Element) ->
-    Element#xmlelement{children = merge_cdata(Children, [])}.
+merge_cdata(#xmlel{children = Children} = Element) ->
+    Element#xmlel{children = merge_cdata(Children, [])}.
 
 merge_cdata([#xmlcdata{content = C1}, #xmlcdata{content = C2} | Rest], Acc) ->
     merge_cdata([#xmlcdata{content = <<C1/binary, C2/binary>>} | Rest], Acc);
-merge_cdata([#xmlelement{children = Children} = Element | Rest], Acc) ->
-    merge_cdata(Rest, [Element#xmlelement{children = merge_cdata(Children, [])} | Acc]);
+merge_cdata([#xmlel{children = Children} = Element | Rest], Acc) ->
+    merge_cdata(Rest, [Element#xmlel{children = merge_cdata(Children, [])} | Acc]);
 merge_cdata([Else | Rest], Acc) ->
     merge_cdata(Rest, [Else | Acc]);
 merge_cdata([], Acc) ->

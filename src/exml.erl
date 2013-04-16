@@ -25,9 +25,9 @@ to_binary(Element) ->
 -spec to_iolist(xmlterm() | [xmlterm()]) -> iolist().
 to_iolist(Elements) when is_list(Elements) ->
     lists:map(fun to_iolist/1, Elements);
-to_iolist(#xmlelement{name = Name, attrs = Attrs, children = []}) ->
+to_iolist(#xmlel{name = Name, attrs = Attrs, children = []}) ->
     ["<", Name, attrs_to_iolist(Attrs, []), "/>"];
-to_iolist(#xmlelement{name = Name, attrs = Attrs, children = Children}) ->
+to_iolist(#xmlel{name = Name, attrs = Attrs, children = Children}) ->
     ["<", Name, attrs_to_iolist(Attrs, []), ">",
      to_iolist(Children),
      "</", Name, ">"];
@@ -64,7 +64,7 @@ attrs_to_iolist([], Acc) ->
 attrs_to_iolist([{Name, Value} | Rest], Acc) ->
     attrs_to_iolist(Rest, [" ", Name, "='", Value, "'" | Acc]).
 
--spec parse(binary()) -> {ok, #xmlelement{}} | {error, any()}.
+-spec parse(binary()) -> {ok, #xmlel{}} | {error, any()}.
 parse(XML) ->
     {ok, Parser} = exml_stream:new_parser(),
     Stream = <<"<stream>", XML/binary, "</stream>">>,

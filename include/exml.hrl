@@ -2,8 +2,8 @@
 
 -record(xmlcdata, {content = [] :: iodata()}).
 
--record(xmlelement, {name :: binary(),
-                     attrs = [] :: [xmlattr()],
-                     children =  [] :: [#xmlelement{} | #xmlcdata{}]}).
+-record(xmlel, {name :: binary(),
+                attrs = [] :: [xmlattr()],
+                children =  [] :: [#xmlel{} | #xmlcdata{}]}).
 
--type xmlterm() :: #xmlelement{} | xmlattr() | #xmlcdata{}.
+-type xmlterm() :: #xmlel{} | xmlattr() | #xmlcdata{}.

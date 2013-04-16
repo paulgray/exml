@@ -70,32 +70,32 @@ parse_events([], Stack, Acc) ->
     {lists:reverse(Acc), Stack};
 parse_events([{xml_element_start, Name, NSs, Attrs} | Rest], [], Acc) ->
     NewAttrs = nss_to_fake_attrs(NSs, []) ++ Attrs,
-    parse_events(Rest, [#xmlelement{name = Name, attrs = NewAttrs}],
+    parse_events(Rest, [#xmlel{name = Name, attrs = NewAttrs}],
                  [#xmlstreamstart{name = Name, attrs = NewAttrs} | Acc]);
 parse_events([{xml_element_start, Name, NSs, Attrs} | Rest], Stack, Acc) ->
     NewAttrs = nss_to_fake_attrs(NSs, []) ++ Attrs,
-    parse_events(Rest, [#xmlelement{name = Name, attrs = NewAttrs} | Stack], Acc);
-parse_events([{xml_element_end, Name} | Rest], [#xmlelement{name = Name}], Acc) ->
+    parse_events(Rest, [#xmlel{name = Name, attrs = NewAttrs} | Stack], Acc);
+parse_events([{xml_element_end, Name} | Rest], [#xmlel{name = Name}], Acc) ->
     parse_events(Rest, [], [#xmlstreamend{name = Name} | Acc]);
-parse_events([{xml_element_end, Name} | Rest], [#xmlelement{name = Name} = Element, Top], Acc) ->
+parse_events([{xml_element_end, Name} | Rest], [#xmlel{name = Name} = Element, Top], Acc) ->
     parse_events(Rest, [Top], [xml_element(Element) | Acc]);
 parse_events([{xml_element_end, _Name} | Rest], [Element, Parent | Stack], Acc) ->
-    NewElement = Element#xmlelement{children = lists:reverse(Element#xmlelement.children)},
-    NewParent = Parent#xmlelement{children = [NewElement | Parent#xmlelement.children]},
+    NewElement = Element#xmlel{children = lists:reverse(Element#xmlel.children)},
+    NewParent = Parent#xmlel{children = [NewElement | Parent#xmlel.children]},
     parse_events(Rest, [NewParent | Stack], Acc);
 parse_events([{xml_cdata, _CData} | Rest], [Top], Acc) ->
     parse_events(Rest, [Top], Acc);
-parse_events([{xml_cdata, CData} | Rest], [#xmlelement{children = [#xmlcdata{content = Content} |
+parse_events([{xml_cdata, CData} | Rest], [#xmlel{children = [#xmlcdata{content = Content} |
                                                                    RestChildren]} = XML | Stack], Acc) ->
     NewChildren = [#xmlcdata{content = list_to_binary([Content, CData])} | RestChildren],
-    parse_events(Rest, [XML#xmlelement{children = NewChildren} | Stack], Acc);
+    parse_events(Rest, [XML#xmlel{children = NewChildren} | Stack], Acc);
 parse_events([{xml_cdata, CData} | Rest], [Element | Stack], Acc) ->
-    NewChildren = [#xmlcdata{content = CData} | Element#xmlelement.children],
-    parse_events(Rest, [Element#xmlelement{children = NewChildren} | Stack], Acc).
+    NewChildren = [#xmlcdata{content = CData} | Element#xmlel.children],
+    parse_events(Rest, [Element#xmlel{children = NewChildren} | Stack], Acc).
 
--spec xml_element(#xmlelement{}) -> #xmlelement{}.
-xml_element(#xmlelement{children = Children} = Element) ->
-    Element#xmlelement{children = xml_children(Children, [])}.
+-spec xml_element(#xmlel{}) -> #xmlel{}.
+xml_element(#xmlel{children = Children} = Element) ->
+    Element#xmlel{children = xml_children(Children, [])}.
 
 -spec xml_children(list(xmlterm()), list(xmlterm())) -> list(xmlterm()).
 xml_children([], Children) ->

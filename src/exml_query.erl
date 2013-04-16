@@ -17,69 +17,69 @@
 -type path() :: [cdata | {element, binary()} | {attr, binary()}].
 
 %% @doc gets the element/attr/cdata contained in the leftmost path
--spec path(#xmlelement{}, path()) -> #xmlelement{} | binary() | undefined.
+-spec path(#xmlel{}, path()) -> #xmlel{} | binary() | undefined.
 path(Element, Path) ->
     path(Element, Path, undefined).
 
 %% @doc gets the element/attr/cdata in the leftmost possible described path
--spec path(#xmlelement{}, path(), Other) -> #xmlelement{} | binary() | Other.
-path(#xmlelement{} = Element, [], _) ->
+-spec path(#xmlel{}, path(), Other) -> #xmlel{} | binary() | Other.
+path(#xmlel{} = Element, [], _) ->
     Element;
-path(#xmlelement{} = Element, [{element, Name} | Rest], Default) ->
+path(#xmlel{} = Element, [{element, Name} | Rest], Default) ->
     Child = subelement(Element, Name), % may return undefined
     path(Child, Rest, Default);
-path(#xmlelement{} = Element, [cdata], _) ->
+path(#xmlel{} = Element, [cdata], _) ->
     cdata(Element);
-path(#xmlelement{} = Element, [{attr, Name}], Default) ->
+path(#xmlel{} = Element, [{attr, Name}], Default) ->
     attr(Element, Name, Default);
 path(_, _, Default) ->
     Default.
 
 %% @doc gets the elements/attrs/cdatas reachable by the described path
--spec paths(#xmlelement{}, path()) -> [#xmlelement{} | binary()].
-paths(#xmlelement{} = Element, []) ->
+-spec paths(#xmlel{}, path()) -> [#xmlel{} | binary()].
+paths(#xmlel{} = Element, []) ->
     [Element];
-paths(#xmlelement{} = Element, [{element, Name} | Rest]) ->
+paths(#xmlel{} = Element, [{element, Name} | Rest]) ->
     Children = subelements(Element, Name),
     lists:append([paths(Child, Rest) || Child <- Children]);
-paths(#xmlelement{} = Element, [cdata]) ->
+paths(#xmlel{} = Element, [cdata]) ->
     [cdata(Element)];
-paths(#xmlelement{attrs = Attrs}, [{attr, Name}]) ->
+paths(#xmlel{attrs = Attrs}, [{attr, Name}]) ->
     lists:sublist([V || {N, V} <- Attrs, N =:= Name], 1);
-paths(#xmlelement{}, Path) when is_list(Path) ->
+paths(#xmlel{}, Path) when is_list(Path) ->
     [].
 
--spec subelement(#xmlelement{}, binary()) -> #xmlelement{} | undefined.
+-spec subelement(#xmlel{}, binary()) -> #xmlel{} | undefined.
 subelement(Element, Name) ->
     subelement(Element, Name, undefined).
 
--spec subelement(#xmlelement{}, binary(), Other) -> #xmlelement{} | Other.
-subelement(#xmlelement{children = Children}, Name, Default) ->
-    case lists:keyfind(Name, #xmlelement.name, Children) of
+-spec subelement(#xmlel{}, binary(), Other) -> #xmlel{} | Other.
+subelement(#xmlel{children = Children}, Name, Default) ->
+    case lists:keyfind(Name, #xmlel.name, Children) of
         false ->
             Default;
         Result ->
             Result
     end.
 
--spec subelements(#xmlelement{}, binary()) -> [#xmlelement{}].
-subelements(#xmlelement{children = Children}, Name) ->
-    lists:filter(fun(#xmlelement{name = N}) when N =:= Name ->
+-spec subelements(#xmlel{}, binary()) -> [#xmlel{}].
+subelements(#xmlel{children = Children}, Name) ->
+    lists:filter(fun(#xmlel{name = N}) when N =:= Name ->
                         true;
                     (_) ->
                         false
                  end, Children).
 
--spec cdata(#xmlelement{}) -> binary().
-cdata(#xmlelement{children = Children}) ->
+-spec cdata(#xmlel{}) -> binary().
+cdata(#xmlel{children = Children}) ->
     list_to_binary([exml:unescape_cdata(C) || #xmlcdata{} = C <- Children]).
 
--spec attr(#xmlelement{}, binary()) -> binary() | undefined.
+-spec attr(#xmlel{}, binary()) -> binary() | undefined.
 attr(Element, Name) ->
     attr(Element, Name, undefined).
 
--spec attr(#xmlelement{}, binary(), Other) -> binary() | Other.
-attr(#xmlelement{attrs = Attrs}, Name, Default) ->
+-spec attr(#xmlel{}, binary(), Other) -> binary() | Other.
+attr(#xmlel{attrs = Attrs}, Name, Default) ->
     case lists:keyfind(Name, 1, Attrs) of
         {Name, Value} ->
             Value;
