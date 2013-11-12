@@ -14,15 +14,18 @@
 -export([to_list/1, to_binary/1, to_iolist/1]).
 -export([escape_cdata/1, unescape_cdata/1, unescape_cdata_as/2]).
 
--spec to_list(xmlterm() | [xmlterm()]) -> string().
+-spec to_list(#xmlstreamstart{} | #xmlstreamend{}
+              | xmlterm()) -> string().
 to_list(Element) ->
     binary_to_list(to_binary(Element)).
 
--spec to_binary(xmlterm() | [xmlterm()]) -> binary().
+-spec to_binary(#xmlstreamstart{} | #xmlstreamend{}
+                | xmlterm() | [xmlterm()]) -> binary().
 to_binary(Element) ->
     list_to_binary(to_iolist(Element)).
 
--spec to_iolist(xmlterm() | [xmlterm()]) -> iolist().
+-spec to_iolist(#xmlstreamstart{} | #xmlstreamend{}
+                | xmlterm() | [xmlterm()]) -> iolist().
 to_iolist(Elements) when is_list(Elements) ->
     lists:map(fun to_iolist/1, Elements);
 to_iolist(#xmlel{name = Name, attrs = Attrs, children = []}) ->
