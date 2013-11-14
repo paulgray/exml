@@ -15,6 +15,7 @@
 -export([cdata/1]).
 
 -type path() :: [cdata | {element, binary()} | {attr, binary()}].
+-export_type([path/0]).
 
 %% @doc gets the element/attr/cdata contained in the leftmost path
 -spec path(#xmlel{}, path()) -> #xmlel{} | binary() | undefined.
