@@ -11,7 +11,8 @@
 -include("exml_stream.hrl").
 
 -export([parse/1]).
--export([to_list/1, to_binary/1, to_iolist/1]).
+-export([to_list/1, to_binary/1, to_iolist/1,
+         to_pretty_iolist/1, to_pretty_iolist/3]).
 -export([escape_cdata/1, unescape_cdata/1, unescape_cdata_as/2]).
 
 -spec to_list(#xmlstreamstart{} | #xmlstreamend{}
@@ -42,6 +43,36 @@ to_iolist(#xmlcdata{content = Content}) ->
     %% it's caller's responsibility to make sure that
     %% #xmlcdata's content is escaped properly!
     [Content]. %% ensure we return io*list*
+
+-spec to_pretty_iolist(#xmlstreamstart{} | #xmlstreamend{}
+                       | xmlterm()) -> iolist().
+to_pretty_iolist(Term) ->
+    to_pretty_iolist(Term, 0, "  ").
+
+%% `to_pretty_iolist/3' is generic enough to express `to_iolist/1'
+%% by passing an empty string as `Indent', but that would be less efficient,
+%% so let's leave the implementations separate.
+-spec to_pretty_iolist(#xmlstreamstart{} | #xmlstreamend{} | xmlterm(),
+                       non_neg_integer(), string()) -> iolist().
+to_pretty_iolist(#xmlel{name = Name, attrs = Attrs, children = []},
+                 Level, Indent) ->
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "<", Name, attrs_to_iolist(Attrs, []), "/>\n"];
+to_pretty_iolist(#xmlel{name = Name, attrs = Attrs, children = Children},
+                 Level, Indent) ->
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "<", Name, attrs_to_iolist(Attrs, []), ">\n",
+     [to_pretty_iolist(C, Level+1, Indent) || C <- Children],
+     Shift, "</", Name, ">\n"];
+to_pretty_iolist(#xmlstreamstart{name = Name, attrs = Attrs}, Level, Indent) ->
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "<", Name, attrs_to_iolist(Attrs, []), ">\n"];
+to_pretty_iolist(#xmlstreamend{name = Name}, Level, Indent) ->
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "</", Name, ">\n"];
+to_pretty_iolist(#xmlcdata{content = Content}, Level, Indent) ->
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, Content, "\n"].
 
 -spec escape_cdata(iodata()) -> #xmlcdata{}.
 escape_cdata(Text) ->
