@@ -58,6 +58,12 @@ to_pretty_iolist(#xmlel{name = Name, attrs = Attrs, children = []},
                  Level, Indent) ->
     Shift = lists:duplicate(Level, Indent),
     [Shift, "<", Name, attrs_to_iolist(Attrs, []), "/>\n"];
+to_pretty_iolist(#xmlel{name = Name, attrs = Attrs,
+                        children = [#xmlcdata{content = Content}]},
+                 Level, Indent) ->
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "<", Name, attrs_to_iolist(Attrs, []), ">",
+     Content, "</", Name, ">\n"];
 to_pretty_iolist(#xmlel{name = Name, attrs = Attrs, children = Children},
                  Level, Indent) ->
     Shift = lists:duplicate(Level, Indent),
