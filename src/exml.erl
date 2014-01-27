@@ -13,7 +13,8 @@
 -export([parse/1]).
 -export([to_list/1, to_binary/1, to_iolist/1,
          to_pretty_iolist/1, to_pretty_iolist/3]).
--export([escape_cdata/1, unescape_cdata/1, unescape_cdata_as/2]).
+-export([escape_attr/1, unescape_attr/1,
+         escape_cdata/1, unescape_cdata/1, unescape_cdata_as/2]).
 
 -spec to_list(#xmlstreamstart{} | #xmlstreamend{}
               | xmlterm()) -> string().
@@ -79,6 +80,30 @@ to_pretty_iolist(#xmlstreamend{name = Name}, Level, Indent) ->
 to_pretty_iolist(#xmlcdata{content = Content}, Level, Indent) ->
     Shift = lists:duplicate(Level, Indent),
     [Shift, Content, "\n"].
+
+-spec escape_attr(iodata()) -> binary().
+escape_attr(Value) ->
+    Esc1 = re:replace(Value, "&",  <<"\\&amp;">>,  [global]),
+    Esc2 = re:replace(Esc1,  "<",  <<"\\&lt;">>,   [global]),
+    Esc3 = re:replace(Esc2,  ">",  <<"\\&gt;">>,   [global]),
+    Esc4 = re:replace(Esc3,  "\"", <<"\\&quot;">>, [global]),
+    Esc5 = re:replace(Esc4,  "'",  <<"\\&apos;">>, [global]),
+    Esc6 = re:replace(Esc5,  "\n", <<"\\&#xA;">>,  [global]),
+    Esc7 = re:replace(Esc6,  "\t", <<"\\&#x9;">>,  [global]),
+    Esc8 = re:replace(Esc7,  "\r", <<"\\&#xD;">>,  [global, {return, binary}]),
+    Esc8.
+
+-spec unescape_attr(binary()) -> binary().
+unescape_attr(Value) ->
+    Esc1 = re:replace(Value, "&#xD;",  <<"\r">>,  [global]),
+    Esc2 = re:replace(Esc1,  "&#x9;",  <<"\t">>,  [global]),
+    Esc3 = re:replace(Esc2,  "&#xA;",  <<"\n">>,  [global]),
+    Esc4 = re:replace(Esc3,  "&apos;", <<"'">>,   [global]),
+    Esc5 = re:replace(Esc4,  "&quot;", <<"\"">>,  [global]),
+    Esc6 = re:replace(Esc5,  "&gt;",   <<">">>,   [global]),
+    Esc7 = re:replace(Esc6,  "&lt;",   <<"<">>,   [global]),
+    Esc8 = re:replace(Esc7,  "&amp;",  <<"\\&">>, [global, {return, binary}]),
+    Esc8.
 
 -spec escape_cdata(iodata()) -> #xmlcdata{}.
 escape_cdata(Text) ->
