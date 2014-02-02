@@ -23,7 +23,7 @@ load() ->
                   Path ->
                       Path
               end,
-    erlang:load_nif(filename:join(PrivDir, "exml"), none).
+    erlang:load_nif(filename:join(PrivDir, "exml_event"), none).
 
 -spec new_parser() -> term().
 new_parser() ->
