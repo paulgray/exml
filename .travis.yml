@@ -5,6 +5,7 @@ branches:
 notifications:
         email: michal@ptaszek.net
 env:
+        - 17.0-rc1
         - R16B03-1
         - R16B03
         - R16B02
