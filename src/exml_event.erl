@@ -31,18 +31,6 @@ load() ->
               end,
     erlang:load_nif(filename:join(PrivDir, "exml_event"), none).
 
--spec new_parser() -> term().
-new_parser() ->
-    throw({?MODULE, nif_not_loaded}).
-
--spec reset_parser(term()) -> ok.
-reset_parser(_Parser) ->
-    throw({?MODULE, nif_not_loaded}).
-
--spec free_parser(term()) -> ok.
-free_parser(_Parser) ->
-    throw({?MODULE, nif_not_loaded}).
-
 -spec parse(term(), binary()) -> {ok, list()} | {error, string()}.
 parse(Parser, Data) ->
     do_parse(Parser, Data, ?NOT_FINAL, byte_size(Data), []).
@@ -70,6 +58,19 @@ do_parse(Parser, Data, Final, _Size, Acc) ->
             Error
     end.
 
+-spec new_parser() -> term().
+new_parser() ->
+    erlang:nif_error({?MODULE, nif_not_loaded}).
+
+-spec reset_parser(term()) -> ok.
+reset_parser(_Parser) ->
+    erlang:nif_error({?MODULE, nif_not_loaded}).
+
+-spec free_parser(term()) -> ok.
+free_parser(_Parser) ->
+    erlang:nif_error({?MODULE, nif_not_loaded}).
+
 -spec parse_nif(term(), binary(), integer()) -> list().
 parse_nif(_Parser, _Data, _Final) ->
-    throw({?MODULE, nif_not_loaded}).
+    erlang:nif_error({?MODULE, nif_not_loaded}).
+
