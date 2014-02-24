@@ -3,11 +3,9 @@ branches:
         only:
                 - master
 notifications:
-        email: paulgray2@gmail.com
+        email: michal@ptaszek.net
 env:
-        - R15B02
-        - R15B01
-        - R15B
-        - R14B04
-        - R14B03
-        - R14B02
+        - R16B03-1
+        - R16B03
+        - R16B02
+        - R16B01
