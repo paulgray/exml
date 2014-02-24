@@ -1,4 +1,4 @@
-#include "exml_event.h"
+#include "exml.h"
 
 /* This should correspond to the similar define in exml_event.erl */
 /* Current value is: erlang:system_info(context_reductions) * 10 */

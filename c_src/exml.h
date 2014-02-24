@@ -1,11 +1,21 @@
-#ifndef EXML_EVENT_H
-#define EXML_EVENT_H
+#ifndef EXML_H
+#define EXML_H
 
 #include <erl_nif.h>
-#include <expat.h>
-#include <assert.h>
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
+#include <expat.h>
+
+#define EXML_CDATA_BUF_SIZE 1024
+#define EXML_ATTR_BUF_SIZE 64
+
+// functions 'exported' by exml_escape.c module
+ERL_NIF_TERM exml_escape_attr(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+ERL_NIF_TERM exml_unescape_attr(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+ERL_NIF_TERM exml_escape_cdata(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+ERL_NIF_TERM exml_unescape_cdata(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 
 // structure used as a private data by expat parser
 typedef struct

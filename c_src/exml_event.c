@@ -1,4 +1,4 @@
-#include "exml_event.h"
+#include "exml.h"
 
 // pre-allocated Erlang atoms used commonly within the driver
 static ERL_NIF_TERM XML_ELEMENT_START;

@@ -58,6 +58,13 @@ unescape_cdata_test() ->
     assert_unescape_cdata(<<"&amp">>, <<"&amp">>),
     assert_unescape_cdata(<<"&amm;">>, <<"&amm;">>).
 
+large_escape_test() ->
+    Pass = list_to_binary(lists:duplicate(20001, <<"&">>)),
+    Expected = list_to_binary(lists:duplicate(20001, <<"&amp;">>)),
+    assert_escape_attr(Expected, Pass),
+    assert_unescape_attr(Pass, Expected),
+    assert_escape_cdata(Expected, Pass),
+    assert_unescape_cdata(Pass, Expected).
 
 assert_escape_attr(EscapedText, Text) ->
     ?assertEqual(EscapedText, exml:escape_attr(Text)),
