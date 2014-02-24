@@ -1,5 +1,17 @@
 #include "exml_event.h"
 
+// pre-allocated Erlang atoms used commonly within the driver
+static ERL_NIF_TERM XML_ELEMENT_START;
+static ERL_NIF_TERM XML_ELEMENT_END;
+static ERL_NIF_TERM XML_CDATA;
+static ERL_NIF_TERM XML_ELEMENT_START;
+static ERL_NIF_TERM OK;
+static ERL_NIF_TERM NONE;
+static ERL_NIF_TERM ERROR;
+
+static XML_Memory_Handling_Suite ms =
+    {enif_alloc, enif_realloc, enif_free};
+
 static ErlNifResourceType *PARSER_POINTER = NULL;
 
 static ErlNifBinary encode_name(expat_parser *parser_data, const XML_Char *name)
@@ -139,7 +151,7 @@ static void init_parser(XML_Parser parser, expat_parser *parser_data)
     XML_SetDefaultHandler(parser, NULL);
 };
 
-static ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM exml_new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser parser;
     expat_parser *parser_data = (expat_parser *)enif_alloc(sizeof(expat_parser));
@@ -159,7 +171,7 @@ static ERL_NIF_TERM new_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv
     return enif_make_tuple(env, 2, OK, parser_resource);
 };
 
-static ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM exml_reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser **parser;
 
@@ -179,7 +191,7 @@ static ERL_NIF_TERM reset_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM ar
     return OK;
 };
 
-static ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM exml_free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser **parser;
 
@@ -196,7 +208,7 @@ static ERL_NIF_TERM free_parser(ErlNifEnv *env, int argc, const ERL_NIF_TERM arg
     return OK;
 };
 
-static ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM exml_parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     XML_Parser **parser;
     int is_final, res, errcode;
@@ -220,6 +232,7 @@ static ERL_NIF_TERM parse(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     XML_SetUserData((XML_Parser)(*parser), parser_data);
 
     res = XML_Parse((XML_Parser)(*parser), (const char *)stream.data, stream.size, is_final);
+    consume_timeslice(env, stream);
     if(!res)
         {
             errcode = XML_GetErrorCode((XML_Parser)(*parser));
@@ -265,10 +278,10 @@ static void unload(ErlNifEnv* env, void* priv)
 
 static ErlNifFunc funcs[] =
     {
-        {"new_parser", 0, new_parser},
-        {"reset_parser", 1, reset_parser},
-        {"free_parser", 1, free_parser},
-        {"parse_nif", 3, parse}
+        {"new_parser", 0, exml_new_parser},
+        {"reset_parser", 1, exml_reset_parser},
+        {"free_parser", 1, exml_free_parser},
+        {"parse_nif", 3, exml_parse}
     };
 
 ERL_NIF_INIT(exml_event, funcs, &load, &reload, &upgrade, &unload);

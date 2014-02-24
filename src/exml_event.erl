@@ -1,6 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author Michal Ptaszek <michal.ptaszek@erlang-solutions.com>
-%%% @copyright (C) 2011, Erlang Solutions Ltd.
+%%% @author Michal Ptaszek <michal@ptaszek.net>
 %%% @doc Event-based XML parser
 %%% @end
 %%%-------------------------------------------------------------------
@@ -12,6 +11,13 @@
 -export([new_parser/0, reset_parser/1, free_parser/1, parse/2, parse_final/2]).
 
 -on_load(load/0).
+
+%% Maximum bytes passed to the NIF handler at once
+%% Current value is erlang:system_info(context_reductions) * 10
+-define(MAX_BYTES_TO_NIF, 20000).
+
+-define(NOT_FINAL, 0).
+-define(FINAL, 1).
 
 -spec load() -> any().
 load() ->
@@ -39,17 +45,27 @@ free_parser(_Parser) ->
 
 -spec parse(term(), binary()) -> {ok, list()} | {error, string()}.
 parse(Parser, Data) ->
-    do_parse(Parser, Data, 0).
+    do_parse(Parser, Data, ?NOT_FINAL, byte_size(Data), []).
 
 -spec parse_final(term(), binary()) -> {ok, list()} | {error, string()}.
 parse_final(Parser, Data) ->
-    do_parse(Parser, Data, 1).
+    do_parse(Parser, Data, ?FINAL, byte_size(Data), []).
 
--spec do_parse(term(), binary(), 0 | 1) -> {ok, list()} | {error, string()}.
-do_parse(Parser, Data, Final) ->
+-spec do_parse(term(), binary(), 0 | 1, integer(), list()) ->
+                      {ok, list()} | {error, string()}.
+do_parse(Parser, Data, Final, Size, Acc) when Size > ?MAX_BYTES_TO_NIF ->
+    <<DataToPass:?MAX_BYTES_TO_NIF/binary, Rest/binary>> = Data,
+    case parse_nif(Parser, DataToPass, ?NOT_FINAL) of
+        {ok, Res} ->
+            do_parse(Parser, Rest, Final, Size - ?MAX_BYTES_TO_NIF,
+                     [lists:reverse(Res) | Acc]);
+        Error ->
+            Error
+    end;
+do_parse(Parser, Data, Final, _Size, Acc) ->
     case parse_nif(Parser, Data, Final) of
         {ok, Res} ->
-            {ok, lists:reverse(Res)};
+            {ok, lists:append(lists:reverse([lists:reverse(Res) | Acc]))};
         Error ->
             Error
     end.

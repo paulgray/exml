@@ -55,3 +55,24 @@ xmlns_declaration_test() ->
                                             " xmlns='naked-ns'
                                             >">>)),
     ?assertEqual(ok, exml_event:free_parser(Parser)).
+
+large_element_test() ->
+    {ok, Parser} = exml_event:new_parser(),
+    LargeElement = list_to_binary([<<"<test>">> |
+                                   lists:duplicate(20000, <<"<element/>">>)]),
+    ExpectedEvents = [{xml_element_start, <<"test">>, [], []} |
+                      lists:foldl(fun(_, Acc) ->
+                                          [{xml_element_start, <<"element">>, [], []},
+                                           {xml_element_end, <<"element">>} | Acc]
+                                  end, [], lists:seq(1, 20000))],
+    ?assertEqual({ok, ExpectedEvents},
+                 exml_event:parse(Parser, LargeElement)),
+    ?assertEqual(ok, exml_event:free_parser(Parser)).
+
+large_element_fail_test() ->
+    {ok, Parser} = exml_event:new_parser(),
+    LargeElement = list_to_binary([<<"<test>">> |
+                                   lists:duplicate(20000, <<"<element/>">>)]),
+    ?assertMatch({error, _},
+                 exml_event:parse(Parser, <<LargeElement/binary, <<"<a></b>">>/binary>>)),
+    ?assertEqual(ok, exml_event:free_parser(Parser)).
