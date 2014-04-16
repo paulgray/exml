@@ -4,7 +4,7 @@ branches:
                 - master
 notifications:
         email: michal@ptaszek.net
-env:
+otp_release:
         - 17.0-rc1
         - R16B03-1
         - R16B03
