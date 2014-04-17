@@ -27,7 +27,7 @@
 %%% Public API
 %%%===================================================================
 
--spec new_parser() -> {ok, #parser{}} | {error, any()}.
+-spec new_parser() -> {ok, parser()} | {error, any()}.
 new_parser() ->
     case exml_event:new_parser() of
         {ok, EventParser} ->
@@ -36,8 +36,8 @@ new_parser() ->
             {error, Error}
     end.
 
--spec parse(#parser{}, binary()) ->
-        {ok, #parser{}, [xmlstreamelement()]} | {error, {string(), binary()}}.
+-spec parse(parser(), binary()) ->
+    {ok, parser(), [xmlstreamelement()]} | {error, {string(), binary()}}.
 parse(#parser{event_parser = EventParser, stack = OldStack} = Parser, Input) ->
     case exml_event:parse(EventParser, Input) of
         {ok, Events} ->
@@ -47,7 +47,7 @@ parse(#parser{event_parser = EventParser, stack = OldStack} = Parser, Input) ->
             {error, {Msg, Input}}
     end.
 
--spec reset_parser(#parser{}) -> {ok, #parser{}} | {error, any()}.
+-spec reset_parser(parser()) -> {ok, parser()} | {error, any()}.
 reset_parser(#parser{event_parser=EventParser}) ->
     case exml_event:reset_parser(EventParser) of
         ok ->
@@ -57,7 +57,7 @@ reset_parser(#parser{event_parser=EventParser}) ->
             {error, Error}
     end.
 
--spec free_parser(#parser{}) -> ok | {error, any()}.
+-spec free_parser(parser()) -> ok | {error, any()}.
 free_parser(#parser{event_parser = EventParser}) ->
     exml_event:free_parser(EventParser).
 
