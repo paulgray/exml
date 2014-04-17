@@ -40,7 +40,7 @@ parse_final(Parser, Data) ->
     do_parse(Parser, Data, ?FINAL, byte_size(Data), []).
 
 -spec do_parse(term(), binary(), 0 | 1, integer(), list()) ->
-                      {ok, list()} | {error, string()}.
+    {ok, list()} | {error, string()}.
 do_parse(Parser, Data, Final, Size, Acc) when Size > ?MAX_BYTES_TO_NIF ->
     <<DataToPass:?MAX_BYTES_TO_NIF/binary, Rest/binary>> = Data,
     case parse_nif(Parser, DataToPass, ?NOT_FINAL) of
@@ -58,7 +58,7 @@ do_parse(Parser, Data, Final, _Size, Acc) ->
             Error
     end.
 
--spec new_parser() -> term().
+-spec new_parser() -> {ok, term()}.
 new_parser() ->
     erlang:nif_error({?MODULE, nif_not_loaded}).
 
@@ -70,7 +70,7 @@ reset_parser(_Parser) ->
 free_parser(_Parser) ->
     erlang:nif_error({?MODULE, nif_not_loaded}).
 
--spec parse_nif(term(), binary(), integer()) -> list().
+-spec parse_nif(term(), binary(), integer()) -> {ok, list()} | {error, string()}.
 parse_nif(_Parser, _Data, _Final) ->
     erlang:nif_error({?MODULE, nif_not_loaded}).
 
