@@ -13,6 +13,8 @@
 -export([parse/1]).
 -export([to_list/1, to_binary/1, to_iolist/1,
          to_pretty_iolist/1, to_pretty_iolist/3]).
+-export([to_list/2, to_binary/2, to_iolist/2,
+         to_pretty_iolist/2, to_pretty_iolist/4]).
 -export([escape_attr/1, unescape_attr/1,
          escape_cdata/1, unescape_cdata/1, unescape_cdata_as/2]).
 -on_load(load/0).
@@ -38,63 +40,163 @@ load() ->
 to_list(Element) ->
     binary_to_list(to_binary(Element)).
 
+-spec to_list(#xmlstreamstart{} | #xmlstreamend{}
+              | xmlterm(), [escape]) -> string().
+to_list(Element, Opts) ->
+    binary_to_list(to_binary(Element, Opts)).
+
 -spec to_binary(#xmlstreamstart{} | #xmlstreamend{}
                 | xmlterm() | [xmlterm()]) -> binary().
 to_binary(Element) ->
     list_to_binary(to_iolist(Element)).
 
+-spec to_binary(#xmlstreamstart{} | #xmlstreamend{}
+                | xmlterm() | [xmlterm()], [escape]) -> binary().
+to_binary(Element, Opts) ->
+    list_to_binary(to_iolist(Element, Opts)).
+
 -spec to_iolist(#xmlstreamstart{} | #xmlstreamend{}
                 | xmlterm() | [xmlterm()]) -> iolist().
-to_iolist(Elements) when is_list(Elements) ->
-    lists:map(fun to_iolist/1, Elements);
-to_iolist(#xmlel{name = Name, attrs = Attrs, children = []}) ->
-    ["<", Name, attrs_to_iolist(Attrs, []), "/>"];
-to_iolist(#xmlel{name = Name, attrs = Attrs, children = Children}) ->
-    ["<", Name, attrs_to_iolist(Attrs, []), ">",
-     to_iolist(Children),
+to_iolist(Elements) ->
+    to_iolist(Elements, []).
+
+-spec to_iolist(#xmlstreamstart{} | #xmlstreamend{}
+                | xmlterm() | [xmlterm()], [escape]) -> iolist().
+to_iolist(Data, Opts) ->
+    case lists:member(escape, Opts) of
+        true ->
+            to_iolist_escape(Data);
+        false ->
+            to_iolist_clean(Data)
+    end.
+
+-spec to_iolist_escape(#xmlstreamstart{} | #xmlstreamend{}
+                       | xmlterm() | [xmlterm()]) -> iolist().
+to_iolist_escape(Elements) when is_list(Elements) ->
+    lists:map(fun to_iolist_escape/1, Elements);
+to_iolist_escape(#xmlel{name = Name, attrs = Attrs, children = []}) ->
+    EAttrs = [{AttrName, escape_attr(AttrVal)} ||
+                 {AttrName, AttrVal} <- Attrs],
+    ["<", Name, attrs_to_iolist(EAttrs, []), "/>"];
+to_iolist_escape(#xmlel{name = Name, attrs = Attrs, children = Children}) ->
+    EAttrs = [{AttrName, escape_attr(AttrVal)} ||
+                 {AttrName, AttrVal} <- Attrs],
+    ["<", Name, attrs_to_iolist(EAttrs, []), ">",
+     to_iolist_escape(Children),
      "</", Name, ">"];
-to_iolist(#xmlstreamstart{name = Name, attrs = Attrs}) ->
-    ["<", Name, attrs_to_iolist(Attrs, []), ">"];
-to_iolist(#xmlstreamend{name = Name}) ->
+to_iolist_escape(#xmlstreamstart{name = Name, attrs = Attrs}) ->
+    EAttrs = [{AttrName, escape_attr(AttrVal)} ||
+                 {AttrName, AttrVal} <- Attrs],
+    ["<", Name, attrs_to_iolist(EAttrs, []), ">"];
+to_iolist_escape(#xmlstreamend{name = Name}) ->
     ["</", Name, ">"];
-to_iolist(#xmlcdata{content = Content}) ->
-    %% it's caller's responsibility to make sure that
-    %% #xmlcdata's content is escaped properly!
+to_iolist_escape(#xmlcdata{content = Content}) ->
+    [escape_cdata(Content)]. %% ensure we return io*list*
+
+-spec to_iolist_clean(#xmlstreamstart{} | #xmlstreamend{}
+                      | xmlterm() | [xmlterm()]) -> iolist().
+to_iolist_clean(Elements) when is_list(Elements) ->
+    lists:map(fun to_iolist_clean/1, Elements);
+to_iolist_clean(#xmlel{name = Name, attrs = Attrs, children = []}) ->
+    ["<", Name, attrs_to_iolist(Attrs, []), "/>"];
+to_iolist_clean(#xmlel{name = Name, attrs = Attrs, children = Children}) ->
+    ["<", Name, attrs_to_iolist(Attrs, []), ">",
+     to_iolist_clean(Children),
+     "</", Name, ">"];
+to_iolist_clean(#xmlstreamstart{name = Name, attrs = Attrs}) ->
+    ["<", Name, attrs_to_iolist(Attrs, []), ">"];
+to_iolist_clean(#xmlstreamend{name = Name}) ->
+    ["</", Name, ">"];
+to_iolist_clean(#xmlcdata{content = Content}) ->
     [Content]. %% ensure we return io*list*
 
 -spec to_pretty_iolist(#xmlstreamstart{} | #xmlstreamend{}
                        | xmlterm()) -> iolist().
 to_pretty_iolist(Term) ->
-    to_pretty_iolist(Term, 0, "  ").
+    to_pretty_iolist(Term, 0, "  ", []).
+
+-spec to_pretty_iolist(#xmlstreamstart{} | #xmlstreamend{} | xmlterm(),
+                       non_neg_integer(), string()) -> iolist().
+to_pretty_iolist(Term, Level, Indent) ->
+    to_pretty_iolist(Term, Level, Indent, []).
+
+-spec to_pretty_iolist(#xmlstreamstart{} | #xmlstreamend{}
+                       | xmlterm(), [escape]) -> iolist().
+to_pretty_iolist(Term, Opts) ->
+    to_pretty_iolist(Term, 0, "  ", Opts).
 
 %% `to_pretty_iolist/3' is generic enough to express `to_iolist/1'
 %% by passing an empty string as `Indent', but that would be less efficient,
 %% so let's leave the implementations separate.
 -spec to_pretty_iolist(#xmlstreamstart{} | #xmlstreamend{} | xmlterm(),
-                       non_neg_integer(), string()) -> iolist().
-to_pretty_iolist(#xmlel{name = Name, attrs = Attrs, children = []},
-                 Level, Indent) ->
+                       non_neg_integer(), string(), [escape]) -> iolist().
+to_pretty_iolist(Data, Level, Indent, Opts) ->
+    case lists:member(escape, Opts) of
+        true ->
+            to_pretty_iolist_escape(Data, Level, Indent);
+        false ->
+            to_pretty_iolist_clean(Data, Level, Indent)
+    end.
+
+to_pretty_iolist_escape(#xmlel{name = Name, attrs = Attrs, children = []},
+                        Level, Indent) ->
+    EAttrs = [{AttrName, escape_attr(AttrVal)} ||
+                 {AttrName, AttrVal} <- Attrs],
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "<", Name, attrs_to_iolist(EAttrs, []), "/>\n"];
+to_pretty_iolist_escape(#xmlel{name = Name, attrs = Attrs,
+                               children = [#xmlcdata{content = Content}]},
+                        Level, Indent) ->
+    EAttrs = [{AttrName, escape_attr(AttrVal)} ||
+                 {AttrName, AttrVal} <- Attrs],
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "<", Name, attrs_to_iolist(EAttrs, []), ">",
+     escape_cdata(Content), "</", Name, ">\n"];
+to_pretty_iolist_escape(#xmlel{name = Name, attrs = Attrs, children = Children},
+                        Level, Indent) ->
+    EAttrs = [{AttrName, escape_attr(AttrVal)} ||
+                 {AttrName, AttrVal} <- Attrs],
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "<", Name, attrs_to_iolist(EAttrs, []), ">\n",
+     [to_pretty_iolist_escape(C, Level+1, Indent) || C <- Children],
+     Shift, "</", Name, ">\n"];
+to_pretty_iolist_escape(#xmlstreamstart{name = Name, attrs = Attrs},
+                        Level, Indent) ->
+    EAttrs = [{AttrName, escape_attr(AttrVal)} ||
+                 {AttrName, AttrVal} <- Attrs],
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "<", Name, attrs_to_iolist(EAttrs, []), ">\n"];
+to_pretty_iolist_escape(#xmlstreamend{name = Name}, Level, Indent) ->
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, "</", Name, ">\n"];
+to_pretty_iolist_escape(#xmlcdata{content = Content}, Level, Indent) ->
+    Shift = lists:duplicate(Level, Indent),
+    [Shift, escape_cdata(Content), "\n"].
+
+to_pretty_iolist_clean(#xmlel{name = Name, attrs = Attrs, children = []},
+                       Level, Indent) ->
     Shift = lists:duplicate(Level, Indent),
     [Shift, "<", Name, attrs_to_iolist(Attrs, []), "/>\n"];
-to_pretty_iolist(#xmlel{name = Name, attrs = Attrs,
-                        children = [#xmlcdata{content = Content}]},
-                 Level, Indent) ->
+to_pretty_iolist_clean(#xmlel{name = Name, attrs = Attrs,
+                              children = [#xmlcdata{content = Content}]},
+                       Level, Indent) ->
     Shift = lists:duplicate(Level, Indent),
     [Shift, "<", Name, attrs_to_iolist(Attrs, []), ">",
      Content, "</", Name, ">\n"];
-to_pretty_iolist(#xmlel{name = Name, attrs = Attrs, children = Children},
-                 Level, Indent) ->
+to_pretty_iolist_clean(#xmlel{name = Name, attrs = Attrs, children = Children},
+                       Level, Indent) ->
     Shift = lists:duplicate(Level, Indent),
     [Shift, "<", Name, attrs_to_iolist(Attrs, []), ">\n",
-     [to_pretty_iolist(C, Level+1, Indent) || C <- Children],
+     [to_pretty_iolist_clean(C, Level+1, Indent) || C <- Children],
      Shift, "</", Name, ">\n"];
-to_pretty_iolist(#xmlstreamstart{name = Name, attrs = Attrs}, Level, Indent) ->
+to_pretty_iolist_clean(#xmlstreamstart{name = Name, attrs = Attrs},
+                       Level, Indent) ->
     Shift = lists:duplicate(Level, Indent),
     [Shift, "<", Name, attrs_to_iolist(Attrs, []), ">\n"];
-to_pretty_iolist(#xmlstreamend{name = Name}, Level, Indent) ->
+to_pretty_iolist_clean(#xmlstreamend{name = Name}, Level, Indent) ->
     Shift = lists:duplicate(Level, Indent),
     [Shift, "</", Name, ">\n"];
-to_pretty_iolist(#xmlcdata{content = Content}, Level, Indent) ->
+to_pretty_iolist_clean(#xmlcdata{content = Content}, Level, Indent) ->
     Shift = lists:duplicate(Level, Indent),
     [Shift, Content, "\n"].
 
@@ -174,4 +276,3 @@ escape_attr_nif(_Data) ->
 -spec unescape_attr_nif(binary()) -> binary().
 unescape_attr_nif(_Data) ->
     erlang:nif_error({?MODULE, nif_not_loaded}).
-
